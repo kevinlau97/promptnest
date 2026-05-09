@@ -1,0 +1,93 @@
+<template>
+  <Teleport to="body">
+    <transition name="slide">
+      <div v-if="modelValue" class="fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/40" @click="close" />
+        <div class="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-white dark:bg-gray-800">
+          <div class="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+            <h3 class="text-base font-semibold">Folders</h3>
+            <button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700" @click="close">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="p-2">
+            <button
+              v-for="entry in quickEntries"
+              :key="entry.key"
+              class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm"
+              :class="selectedQuick === entry.key ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'"
+              @click="selectQuick(entry.key)"
+            >
+              {{ entry.label }}
+              <span v-if="entry.count" class="ml-auto text-xs text-gray-500">{{ entry.count }}</span>
+            </button>
+            <div class="my-2 border-t border-gray-200 dark:border-gray-700" />
+            <div v-for="node in folderStore.folderTree" :key="node.id">
+              <button
+                class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm"
+                :class="selectedFolderId === node.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'"
+                @click="selectFolder(node.id)"
+              >
+                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                {{ node.name }}
+              </button>
+              <div v-for="child in node.children" :key="child.id" class="pl-4">
+                <button
+                  class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm"
+                  :class="selectedFolderId === child.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'"
+                  @click="selectFolder(child.id)"
+                >
+                  {{ child.name }}
+                </button>
+                <div v-for="g in child.children" :key="g.id" class="pl-4">
+                  <button
+                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm"
+                    :class="selectedFolderId === g.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'"
+                    @click="selectFolder(g.id)"
+                  >
+                    {{ g.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useFolderStore } from '@/stores/folder'
+import { usePromptStore } from '@/stores/prompt'
+import { useSyncStore } from '@/stores/sync'
+
+defineProps<{ modelValue: boolean }>()
+const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void; (e: 'select-folder', id: string | null): void; (e: 'select-quick', key: string): void }>()
+
+const folderStore = useFolderStore()
+const promptStore = usePromptStore()
+const syncStore = useSyncStore()
+
+const selectedFolderId = ref<string | null>(null)
+const selectedQuick = ref('all')
+
+const quickEntries = computed(() => [
+  { key: 'all', label: 'All Prompts', count: promptStore.activePrompts.length },
+  { key: 'favorites', label: 'Favorites', count: promptStore.favoritePrompts.length },
+  { key: 'recent', label: 'Recently Used', count: promptStore.recentlyUsed.length },
+  { key: 'most', label: 'Most Used', count: promptStore.mostUsed.length },
+  { key: 'unsynced', label: 'Unsynced', count: syncStore.pendingCount },
+  { key: 'archived', label: 'Archived', count: promptStore.archivedPrompts.length },
+])
+
+function close() { emit('update:modelValue', false) }
+function selectFolder(id: string | null) { selectedFolderId.value = id; selectedQuick.value = ''; emit('select-folder', id); close() }
+function selectQuick(key: string) { selectedQuick.value = key; selectedFolderId.value = null; emit('select-quick', key); close() }
+</script>
+
+<style scoped>
+.slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
+.slide-enter-from, .slide-leave-to { transform: translateY(100%); }
+</style>

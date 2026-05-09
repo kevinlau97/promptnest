@@ -1,0 +1,24 @@
+{
+  "name": "prompt-nest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:server\"",
+    "dev:web": "npm -w apps/web run dev",
+    "dev:server": "npm -w apps/server run dev",
+    "build": "npm -w apps/web run build && npm -w apps/server run build",
+    "build:web": "npm -w apps/web run build",
+    "build:server": "npm -w apps/server run build",
+    "preview": "npm -w apps/web run preview",
+    "start": "npm -w apps/server run start",
+    "lint": "eslint . --ext .ts,.vue"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  }
+}

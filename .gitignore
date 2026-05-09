@@ -1,0 +1,17 @@
+node_modules
+*.log
+*.zip
+.nuxt
+nuxt.d.ts
+.output
+dist
+.data
+*Zone.Identifier
+.eslintcache
+.DS_Store
+.app/stats.html
+stats.html
+.pnpm-store/
+.app/node-compile-cache/
+.omc/
+.stats/
