@@ -10,6 +10,7 @@ import sync from './routes/sync.js'
 import share from './routes/share.js'
 import capture from './routes/capture.js'
 import health from './routes/health.js'
+import upload from './routes/upload.js'
 
 type Variables = {
   user: { email: string }
@@ -27,6 +28,7 @@ app.route('/api/sync', sync)
 app.route('/api/share', share)
 app.route('/api/capture', capture)
 app.route('/api/health', health)
+app.route('/api/upload', upload)
 
 // Serve frontend build in production
 app.use('*', serveStatic({ root: '../web/dist' }))

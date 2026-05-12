@@ -3,7 +3,7 @@
     <div class="flex h-full flex-col">
       <!-- Top bar -->
       <div class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-        <button class="btn-secondary" @click="$router.push('/')">
+        <button class="btn-secondary" @click="goBack">
           <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
           Back
         </button>
@@ -82,7 +82,21 @@
 
             <div>
               <label class="mb-1 block text-xs font-medium text-gray-500">Content</label>
-              <textarea ref="contentTextarea" v-model="form.content" class="textarea min-h-[200px] font-mono text-sm" placeholder="Write your prompt here..." required />
+              <textarea
+                ref="contentTextarea"
+                v-model="form.content"
+                class="textarea min-h-[200px] font-mono text-sm"
+                placeholder="Write your prompt here... (paste or drop images)"
+                required
+                @paste="handlePaste"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleDrop"
+                :class="isDragging ? 'ring-2 ring-primary-400' : ''"
+              />
+              <div v-if="imageLoading" class="mt-1 text-xs text-primary-600 dark:text-primary-400">
+                Processing image...
+              </div>
             </div>
 
             <!-- AI Enhance -->
@@ -140,13 +154,23 @@
       </div>
     </div>
     <BaseToast />
+    <BaseConfirm
+      v-model="confirmState.visible"
+      :title="confirmState.title"
+      :message="confirmState.message"
+      :confirm-text="confirmState.confirmText"
+      :cancel-text="confirmState.cancelText"
+      :variant="confirmState.variant"
+      @confirm="confirmClose(true)"
+      @cancel="confirmClose(false)"
+    />
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { onBeforeRouteLeave } from 'vue-router'
+
 import { usePromptStore } from '@/stores/prompt'
 import { useFolderStore } from '@/stores/folder'
 import { useToast } from '@/composables/useToast'
@@ -154,6 +178,8 @@ import { usePromptVariables } from '@/composables/usePromptVariables'
 import { useDebounceFn } from '@vueuse/core'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useAutoResize } from '@/composables/useAutoResize'
+import { useConfirm } from '@/composables/useConfirm'
+import { useImageUpload } from '@/composables/useImageUpload'
 import { PROMPT_TYPES } from '@/types/prompt'
 import { generateId, generateSlug } from '@/lib/utils/id'
 import { getFolderPath } from '@/lib/db/folderRepository'
@@ -163,6 +189,7 @@ import { apiClient } from '@/lib/api/client'
 import type { PromptVersion } from '@/types/prompt'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseToast from '@/components/ui/BaseToast.vue'
+import BaseConfirm from '@/components/ui/BaseConfirm.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -185,23 +212,9 @@ const tagInput = ref('')
 const isDirty = ref(false)
 const showVersions = ref(false)
 const versions = ref<PromptVersion[]>([])
+const isDragging = ref(false)
 
-function onBeforeUnload(e: BeforeUnloadEvent) {
-  if (isDirty.value) {
-    e.preventDefault()
-    e.returnValue = ''
-  }
-}
-
-window.addEventListener('beforeunload', onBeforeUnload)
-onBeforeRouteLeave(() => {
-  if (isDirty.value && !confirm('You have unsaved changes. Leave anyway?')) {
-    return false
-  }
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('beforeunload', onBeforeUnload)
-})
+const { loading: imageLoading, uploadImage } = useImageUpload()
 
 const form = reactive({
   title: '',
@@ -395,14 +408,41 @@ function copyShareUrl() {
   success('Share link copied')
 }
 
-function confirmDelete() {
-  if (!confirm('Are you sure you want to delete this prompt?')) return
+const { state: confirmState, confirm: showConfirm, close: confirmClose } = useConfirm()
+
+async function goBack() {
+  if (isDirty.value) {
+    const ok = await showConfirm({
+      title: 'Unsaved Changes',
+      message: 'You have unsaved changes. Leave anyway?',
+      confirmText: 'Leave',
+      variant: 'danger',
+    })
+    if (!ok) return
+  }
+  router.push('/')
+}
+
+async function confirmDelete() {
+  const ok = await showConfirm({
+    title: 'Delete Prompt',
+    message: 'Are you sure you want to delete this prompt?',
+    confirmText: 'Delete',
+    variant: 'danger',
+  })
+  if (!ok) return
   promptStore.remove(promptId.value)
   router.push('/')
 }
 
-function restoreVersion(v: PromptVersion) {
-  if (!confirm('Restore this version? Current unsaved changes will be lost.')) return
+async function restoreVersion(v: PromptVersion) {
+  const ok = await showConfirm({
+    title: 'Restore Version',
+    message: 'Restore this version? Current unsaved changes will be lost.',
+    confirmText: 'Restore',
+    variant: 'primary',
+  })
+  if (!ok) return
   form.title = v.snapshot.title
   form.content = v.snapshot.content
   form.description = v.snapshot.description || ''
@@ -428,6 +468,56 @@ async function toggleShare() {
     shareSlug.value = slug
     success('Share link created')
   }
+}
+
+async function handlePaste(e: ClipboardEvent) {
+  const files = e.clipboardData?.files
+  if (!files || files.length === 0) return
+
+  const imageFile = Array.from(files).find((f) => f.type.startsWith('image/'))
+  if (!imageFile) return
+
+  e.preventDefault()
+  await processImageFile(imageFile)
+}
+
+async function handleDrop(e: DragEvent) {
+  isDragging.value = false
+  const files = e.dataTransfer?.files
+  if (!files || files.length === 0) return
+
+  const imageFile = Array.from(files).find((f) => f.type.startsWith('image/'))
+  if (!imageFile) return
+
+  e.preventDefault()
+  await processImageFile(imageFile)
+}
+
+async function processImageFile(file: File) {
+  try {
+    const url = await uploadImage(file)
+    insertAtCursor(`![image](${url})`)
+    success('Image uploaded')
+  } catch (e: any) {
+    toastError(e?.message || 'Image upload failed')
+  }
+}
+
+function insertAtCursor(text: string) {
+  const textarea = contentTextarea.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const before = form.content.slice(0, start)
+  const after = form.content.slice(end)
+
+  form.content = before + text + after
+
+  requestAnimationFrame(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + text.length
+    textarea.focus()
+  })
 }
 
 useKeyboardShortcuts({ onSave: save })

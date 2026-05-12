@@ -26,6 +26,18 @@ class ApiClient {
     return res.json()
   }
 
+  async postForm<T>(path: string, body: FormData): Promise<ApiResponse<T>> {
+    const token = localStorage.getItem('pn_token')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(this.baseUrl + path, {
+      method: 'POST',
+      headers,
+      body,
+    })
+    return res.json()
+  }
+
   async patch<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
     const res = await fetch(this.baseUrl + path, {
       method: 'PATCH',

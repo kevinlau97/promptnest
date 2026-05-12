@@ -2,7 +2,14 @@
   <BaseModal v-model="localOpen" title="Quick Capture">
     <form class="space-y-3" @submit.prevent="save">
       <input v-model="form.title" class="input" placeholder="Title (optional)" />
-      <textarea v-model="form.content" class="textarea h-32" placeholder="Paste your prompt here..." required />
+      <textarea
+        ref="contentRef"
+        v-model="form.content"
+        class="textarea h-32"
+        placeholder="Paste your prompt here... (paste images)"
+        required
+        @paste="handlePaste"
+      />
       <div class="grid grid-cols-2 gap-3">
         <select v-model="form.type" class="input">
           <option v-for="t in PROMPT_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
@@ -29,13 +36,15 @@ import { PROMPT_TYPES } from '@/types/prompt'
 import { useFolderStore } from '@/stores/folder'
 import { usePromptStore } from '@/stores/prompt'
 import { useToast } from '@/composables/useToast'
+import { useImageUpload } from '@/composables/useImageUpload'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const folderStore = useFolderStore()
 const promptStore = usePromptStore()
-const { success } = useToast()
+const { success, error: toastError } = useToast()
+const { uploadImage } = useImageUpload()
 
 const localOpen = computed({
   get: () => props.modelValue,
@@ -54,15 +63,15 @@ const form = ref({
 })
 
 const tagInput = ref('')
+const contentRef = ref<HTMLTextAreaElement>()
 
 watch(localOpen, (open) => {
   if (open) {
     form.value = { title: '', content: '', type: 'other', folderId: null, tags: [], sourceUrl: '' }
     tagInput.value = ''
-    setTimeout(() => {
-      const el = document.querySelector('textarea')
-      el?.focus()
-    }, 50)
+    requestAnimationFrame(() => {
+      contentRef.value?.focus()
+    })
   }
 })
 
@@ -79,5 +88,43 @@ async function save() {
   })
   success('Prompt saved')
   localOpen.value = false
+}
+
+async function handlePaste(e: ClipboardEvent) {
+  const files = e.clipboardData?.files
+  if (!files || files.length === 0) return
+
+  const imageFile = Array.from(files).find((f) => f.type.startsWith('image/'))
+  if (!imageFile) return
+
+  e.preventDefault()
+  await processImageFile(imageFile)
+}
+
+async function processImageFile(file: File) {
+  try {
+    const url = await uploadImage(file)
+    insertAtCursor(`![image](${url})`)
+    success('Image uploaded')
+  } catch (e: any) {
+    toastError(e?.message || 'Image upload failed')
+  }
+}
+
+function insertAtCursor(text: string) {
+  const textarea = contentRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const before = form.value.content.slice(0, start)
+  const after = form.value.content.slice(end)
+
+  form.value.content = before + text + after
+
+  requestAnimationFrame(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + text.length
+    textarea.focus()
+  })
 }
 </script>

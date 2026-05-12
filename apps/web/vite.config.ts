@@ -22,6 +22,17 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /\/node_modules\/wasm-vips\/.*|.*vips.*\.(wasm|js)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wasm-vips-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
         ],
       },
       manifest: {
