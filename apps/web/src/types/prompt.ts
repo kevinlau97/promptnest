@@ -48,6 +48,7 @@ export interface PromptItem {
 
   links: PromptLink[]
   variables?: PromptVariable[]
+  images: string[]
 
   isFavorite: boolean
   isArchived: boolean

@@ -1,12 +1,20 @@
 <template>
   <Teleport to="body">
     <transition name="fade">
-      <div v-if="modelValue" class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] p-4">
+      <div
+        v-if="modelValue"
+        ref="paletteRef"
+        class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] p-4"
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+      >
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="close" />
         <div class="relative z-10 w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-800">
           <div class="flex items-center border-b border-gray-200 px-4 py-3 dark:border-gray-700">
             <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input
+              ref="inputRef"
               v-model="query"
               class="w-full bg-transparent text-sm outline-none placeholder-gray-400 dark:text-gray-100"
               placeholder="Search prompts or commands..."
@@ -46,8 +54,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { useScrollLock } from '@vueuse/core'
+import { onKeyStroke } from '@vueuse/core'
 import type { PaletteItem } from '@/composables/useCommandPalette'
+import { useModalStack, isAnyModalOpen } from '@/composables/useModalStack'
 
 const props = defineProps<{
   modelValue: boolean
@@ -56,8 +67,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
+const paletteRef = ref<HTMLDivElement>()
+const inputRef = ref<HTMLInputElement>()
 const query = ref('')
 const selectedIndex = ref(0)
+const { register, unregister, isTop } = useModalStack()
+const isLocked = useScrollLock(document.body)
 
 const filteredItems = computed(() => {
   const q = query.value.toLowerCase().trim()
@@ -67,17 +82,30 @@ const filteredItems = computed(() => {
 
 watch(() => props.modelValue, (open) => {
   if (open) {
+    register()
+    isLocked.value = true
     query.value = ''
     selectedIndex.value = 0
-    setTimeout(() => {
-      const el = document.querySelector('input')
-      el?.focus()
-    }, 50)
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
+  } else {
+    unregister()
+    if (!isAnyModalOpen()) {
+      isLocked.value = false
+    }
   }
 })
 
 watch(filteredItems, () => {
   selectedIndex.value = 0
+})
+
+onKeyStroke('Escape', (e) => {
+  if (props.modelValue && isTop()) {
+    e.preventDefault()
+    close()
+  }
 })
 
 function close() {

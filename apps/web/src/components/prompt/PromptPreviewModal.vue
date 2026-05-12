@@ -33,7 +33,7 @@
       <div class="flex flex-wrap gap-2 pt-2">
         <button class="btn-primary" @click="copyContent">Copy Content</button>
         <button class="btn-secondary" @click="copyMarkdown">Copy as Markdown</button>
-        <button class="btn-secondary" @click="$router.push(`/prompts/${prompt.id}`)">Edit</button>
+        <button class="btn-secondary" @click="$emit('edit', prompt.id)">Edit</button>
       </div>
     </div>
   </BaseModal>
@@ -52,6 +52,11 @@ const props = defineProps<{
   modelValue: boolean
   prompt?: PromptItem
   folders: PromptFolder[]
+}>()
+
+defineEmits<{
+  (e: 'update:modelValue', v: boolean): void
+  (e: 'edit', id: string): void
 }>()
 
 const { success } = useToast()

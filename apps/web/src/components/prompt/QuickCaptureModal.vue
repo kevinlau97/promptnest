@@ -21,6 +21,24 @@
       </div>
       <input v-model="tagInput" class="input" placeholder="Tags (comma separated)" />
       <input v-model="form.sourceUrl" class="input" placeholder="Source URL (optional)" />
+      <div v-if="form.images.length" class="space-y-2">
+        <label class="mb-1 block text-xs font-medium text-gray-500">Images</label>
+        <div class="grid grid-cols-4 gap-2">
+          <div
+            v-for="(url, i) in form.images"
+            :key="url + i"
+            class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            <img :src="url" class="h-full w-full object-cover" />
+            <button
+              class="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              @click="removeImage(i)"
+            >
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" class="btn-secondary" @click="localOpen = false">Cancel</button>
         <button type="submit" class="btn-primary" :disabled="!form.content.trim()">Save</button>
@@ -59,6 +77,7 @@ const form = ref({
   type: 'other' as import('@/types/prompt').PromptType,
   folderId: null as string | null,
   tags: [] as string[],
+  images: [] as string[],
   sourceUrl: '',
 })
 
@@ -67,7 +86,7 @@ const contentRef = ref<HTMLTextAreaElement>()
 
 watch(localOpen, (open) => {
   if (open) {
-    form.value = { title: '', content: '', type: 'other', folderId: null, tags: [], sourceUrl: '' }
+    form.value = { title: '', content: '', type: 'other', folderId: null, tags: [], images: [], sourceUrl: '' }
     tagInput.value = ''
     requestAnimationFrame(() => {
       contentRef.value?.focus()
@@ -84,6 +103,7 @@ async function save() {
     type: form.value.type,
     folderId: form.value.folderId,
     tags,
+    images: [...form.value.images],
     sourceUrl: form.value.sourceUrl || undefined,
   })
   success('Prompt saved')
@@ -104,27 +124,14 @@ async function handlePaste(e: ClipboardEvent) {
 async function processImageFile(file: File) {
   try {
     const url = await uploadImage(file)
-    insertAtCursor(`![image](${url})`)
+    form.value.images.push(url)
     success('Image uploaded')
   } catch (e: any) {
     toastError(e?.message || 'Image upload failed')
   }
 }
 
-function insertAtCursor(text: string) {
-  const textarea = contentRef.value
-  if (!textarea) return
-
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const before = form.value.content.slice(0, start)
-  const after = form.value.content.slice(end)
-
-  form.value.content = before + text + after
-
-  requestAnimationFrame(() => {
-    textarea.selectionStart = textarea.selectionEnd = start + text.length
-    textarea.focus()
-  })
+function removeImage(index: number) {
+  form.value.images.splice(index, 1)
 }
 </script>

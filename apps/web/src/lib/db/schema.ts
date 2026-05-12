@@ -38,6 +38,17 @@ export class PromptNestDB extends Dexie {
         if (prompt.version === undefined) prompt.version = 1
       })
     })
+
+    this.version(3).stores({
+      prompts: 'id, folderId, type, isFavorite, isArchived, syncStatus, updatedAt, lastUsedAt, useCount, deletedAt, *tags',
+      folders: 'id, parentId, level, sortOrder, syncStatus, deletedAt',
+      versions: 'id, promptId, createdAt',
+      settings: 'id',
+    }).upgrade((tx) => {
+      return tx.table('prompts').toCollection().modify((prompt: any) => {
+        if (prompt.images === undefined) prompt.images = []
+      })
+    })
   }
 }
 

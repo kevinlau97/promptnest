@@ -46,6 +46,11 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
+            src: '/logo.png',
+            sizes: '128x128',
+            type: 'image/png',
+          },
+          {
             src: '/icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',

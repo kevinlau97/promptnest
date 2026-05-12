@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS prompts (
   tags TEXT NOT NULL DEFAULT '[]',
   links TEXT NOT NULL DEFAULT '[]',
   variables TEXT NOT NULL DEFAULT '[]',
+  images TEXT NOT NULL DEFAULT '[]',
   isFavorite INTEGER NOT NULL DEFAULT 0,
   isArchived INTEGER NOT NULL DEFAULT 0,
   visibility TEXT NOT NULL DEFAULT 'private',

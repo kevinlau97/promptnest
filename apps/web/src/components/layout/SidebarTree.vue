@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full flex-col border-r border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
-    <div class="p-3">
+    <div class="px-4 py-3">
       <div class="flex items-center justify-between">
         <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Folders</span>
         <button class="rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-800" @click="showNewFolder = true" title="New folder">
@@ -8,12 +8,12 @@
         </button>
       </div>
     </div>
-    <div class="flex-1 overflow-y-auto px-2 pb-4">
+    <div class="flex-1 overflow-y-auto pb-4">
       <div class="space-y-0.5">
         <button
           v-for="entry in quickEntries"
           :key="entry.key"
-          class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
+          class="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors"
           :class="selectedQuick === entry.key ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
           @click="selectQuick(entry.key)"
         >

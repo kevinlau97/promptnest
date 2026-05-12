@@ -75,7 +75,7 @@
             :prompt="p"
             :folders="folderStore.folders"
             @copy="copyPrompt(p)"
-            @edit="router.push(`/prompts/${p.id}`)"
+            @edit="openEditModal(p.id)"
             @favorite="promptStore.favorite(p.id)"
             @preview="previewPrompt = p; showPreview = true"
           />
@@ -87,7 +87,7 @@
             :prompt="p"
             :folders="folderStore.folders"
             @copy="copyPrompt(p)"
-            @edit="router.push(`/prompts/${p.id}`)"
+            @edit="openEditModal(p.id)"
             @preview="previewPrompt = p; showPreview = true"
           />
         </div>
@@ -106,7 +106,8 @@
     <QuickCaptureModal v-model="showCapture" />
     <MobileFolderDrawer v-model="showDrawer" @select-folder="onSelectFolder" @select-quick="onSelectQuick" />
     <CommandPalette v-model="paletteOpen" :items="paletteItems" />
-    <PromptPreviewModal v-model="showPreview" :prompt="previewPrompt" :folders="folderStore.folders" />
+    <PromptPreviewModal v-model="showPreview" :prompt="previewPrompt" :folders="folderStore.folders" @edit="(id) => openEditModal(id)" />
+    <PromptEditModal v-model="showEditModal" :prompt-id="editPromptId" @saved="promptStore.load()" />
     <BaseToast />
   </AppLayout>
 </template>
@@ -132,6 +133,7 @@ import SidebarTree from '@/components/layout/SidebarTree.vue'
 import MobileFolderDrawer from '@/components/layout/MobileFolderDrawer.vue'
 import CommandPalette from '@/components/prompt/CommandPalette.vue'
 import PromptPreviewModal from '@/components/prompt/PromptPreviewModal.vue'
+import PromptEditModal from '@/components/prompt/PromptEditModal.vue'
 import BaseToast from '@/components/ui/BaseToast.vue'
 
 const router = useRouter()
@@ -147,6 +149,8 @@ const showCapture = ref(false)
 const showDrawer = ref(false)
 const showPreview = ref(false)
 const previewPrompt = ref<import('@/types/prompt').PromptItem | undefined>()
+const showEditModal = ref(false)
+const editPromptId = ref<string | null>(null)
 const selectedFolderId = ref<string | null>(null)
 const selectedQuick = ref('all')
 const selectedTypes = ref<string[]>([])
@@ -154,9 +158,14 @@ const viewMode = ref<'card' | 'compact'>(settings.viewMode)
 const sortBy = ref(settings.sortBy)
 const sortDesc = ref(settings.sortDesc)
 
+function openEditModal(id?: string) {
+  editPromptId.value = id || null
+  showEditModal.value = true
+}
+
 const palette = useCommandPalette(
   computed(() => promptStore.activePrompts),
-  (id) => router.push(`/prompts/${id}`),
+  (id) => openEditModal(id),
   () => showCapture.value = true,
   () => router.push('/settings'),
   handleSync
@@ -296,4 +305,9 @@ useKeyboardShortcuts({
 watch([viewMode, sortBy, sortDesc], () => {
   settings.save({ viewMode: viewMode.value, sortBy: sortBy.value, sortDesc: sortDesc.value })
 })
+
+// Sync from settings store when changed externally (e.g. in Settings page)
+watch(() => settings.viewMode, (v) => { viewMode.value = v })
+watch(() => settings.sortBy, (v) => { sortBy.value = v })
+watch(() => settings.sortDesc, (v) => { sortDesc.value = v })
 </script>

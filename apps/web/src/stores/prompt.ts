@@ -70,6 +70,7 @@ export const usePromptStore = defineStore('prompt', () => {
       tags: partial.tags || [],
       links,
       variables: partial.variables || [],
+      images: partial.images || [],
       isFavorite: partial.isFavorite ?? false,
       isArchived: partial.isArchived ?? false,
       visibility: partial.visibility || 'private',

@@ -106,6 +106,16 @@
       </div>
     </BaseModal>
     <BaseToast />
+    <BaseConfirm
+      v-model="confirmState.visible"
+      :title="confirmState.title"
+      :message="confirmState.message"
+      :confirm-text="confirmState.confirmText"
+      :cancel-text="confirmState.cancelText"
+      :variant="confirmState.variant"
+      @confirm="confirmClose(true)"
+      @cancel="confirmClose(false)"
+    />
   </AppLayout>
 </template>
 
@@ -120,7 +130,9 @@ import { db } from '@/lib/db/schema'
 import { syncAll, getSyncSummary, resolveConflict, forcePullRemote } from '@/lib/sync/syncService'
 import { exportAllToMarkdown } from '@/lib/export/markdownExport'
 import type { ConflictItem } from '@/lib/sync/syncService'
+import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import BaseConfirm from '@/components/ui/BaseConfirm.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseToast from '@/components/ui/BaseToast.vue'
 import { generateId } from '@/lib/utils/id'
@@ -130,6 +142,7 @@ const folderStore = useFolderStore()
 const syncStore = useSyncStore()
 const settings = useSettingsStore()
 const { success, error } = useToast()
+const { state: confirmState, confirm: showConfirm, close: confirmClose } = useConfirm()
 
 const pwaStatus = ref('Unknown')
 const canInstall = ref(false)
@@ -178,7 +191,13 @@ async function loadConflicts() {
 }
 
 async function forcePull() {
-  if (!confirm('This will overwrite all local data with remote data. Continue?')) return
+  const ok = await showConfirm({
+    title: 'Force Pull',
+    message: 'This will overwrite all local data with remote data. Continue?',
+    confirmText: 'Pull',
+    variant: 'danger',
+  })
+  if (!ok) return
   syncStore.setSyncing(true)
   try {
     await forcePullRemote()
@@ -276,7 +295,13 @@ async function doImport() {
 }
 
 async function confirmClear() {
-  if (!confirm('This will delete ALL local data. Are you sure?')) return
+  const ok = await showConfirm({
+    title: 'Clear Local Data',
+    message: 'This will delete ALL local data. Are you sure?',
+    confirmText: 'Clear',
+    variant: 'danger',
+  })
+  if (!ok) return
   await db.prompts.clear()
   await db.folders.clear()
   await db.versions.clear()
