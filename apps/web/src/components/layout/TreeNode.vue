@@ -1,7 +1,7 @@
 <template>
   <div>
     <button
-      class="flex w-full items-center gap-1.5 rounded-lg pr-3 py-1.5 text-sm transition-colors"
+      class="flex w-full items-center gap-1.5 rounded-lg pr-4 py-1.5 text-sm transition-colors"
       :class="selectedId === node.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
       :style="{ paddingLeft: `${(level || 0) * 12 + 16}px` }"
       @click="$emit('select', node.id)"
