@@ -4,20 +4,32 @@
       <div
         v-if="modelValue"
         ref="modalRef"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4"
         role="dialog"
         aria-modal="true"
         tabindex="-1"
       >
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="close" />
-        <div class="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
-          <div v-if="title" class="mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ title }}</h3>
-            <button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close" @click="close">
+        <!-- 移动端：全屏；桌面端：居中弹窗 -->
+        <div
+          class="relative z-10 flex flex-col bg-white shadow-xl dark:bg-gray-800"
+          :class="[
+            size === 'full'
+              ? 'h-[100dvh] w-full md:h-auto md:max-h-[85vh] md:rounded-2xl md:max-w-5xl'
+              : 'h-[100dvh] w-full md:h-auto md:max-h-[80vh] md:rounded-2xl md:max-w-4xl'
+          ]"
+        >
+          <!-- header 固定 -->
+          <div v-if="title" class="flex items-center justify-between p-4 pb-3 border-b border-gray-200 md:p-6 md:pb-4 dark:border-gray-700">
+            <h3 class="text-base font-semibold md:text-lg">{{ title }}</h3>
+            <button class="rounded p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close" @click="close">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <slot />
+          <!-- 内容区域：可滚动 -->
+          <div class="flex-1 overflow-y-auto p-4 md:p-6">
+            <slot />
+          </div>
         </div>
       </div>
     </transition>
@@ -30,7 +42,12 @@ import { useScrollLock } from '@vueuse/core'
 import { onKeyStroke } from '@vueuse/core'
 import { useModalStack, isAnyModalOpen } from '@/composables/useModalStack'
 
-const props = defineProps<{ modelValue: boolean; title?: string }>()
+const props = defineProps<{
+  modelValue: boolean
+  title?: string
+  size?: 'default' | 'full'
+}>()
+
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const modalRef = ref<HTMLDivElement>()
@@ -51,8 +68,6 @@ watch(() => props.modelValue, (open) => {
     }
   }
 })
-
-// isAnyModalOpen imported from composable
 
 onKeyStroke('Escape', (e) => {
   if (props.modelValue && isTop()) {

@@ -8,5 +8,4 @@ export interface UserSettings {
   sortDesc: boolean
   theme: 'light' | 'dark' | 'system'
   defaultFolderId?: string | null
-  defaultType?: import('./prompt').PromptType
 }

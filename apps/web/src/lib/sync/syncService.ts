@@ -1,19 +1,19 @@
 import { db } from '@/lib/db/schema'
 import { apiClient } from '@/lib/api/client'
-import type { PromptItem } from '@/types/prompt'
+import type { Note } from '@/types/note'
 import type { PromptFolder } from '@/types/folder'
 
 export interface ConflictItem {
   id: string
   type: 'prompt' | 'folder'
-  local: PromptItem | PromptFolder
-  remote: PromptItem | PromptFolder
+  local: Note | PromptFolder
+  remote: Note | PromptFolder
 }
 
 export async function getSyncSummary() {
-  const pendingPrompts = await db.prompts.where('syncStatus').equals('local_pending').count()
+  const pendingPrompts = await db.notes.where('syncStatus').equals('local_pending').count()
   const pendingFolders = await db.folders.where('syncStatus').equals('local_pending').count()
-  const conflictPrompts = await db.prompts.where('syncStatus').equals('conflict').count()
+  const conflictPrompts = await db.notes.where('syncStatus').equals('conflict').count()
   const conflictFolders = await db.folders.where('syncStatus').equals('conflict').count()
   return {
     localPending: pendingPrompts + pendingFolders,
@@ -22,7 +22,7 @@ export async function getSyncSummary() {
 }
 
 export async function getConflicts(): Promise<ConflictItem[]> {
-  const promptConflicts = await db.prompts.where('syncStatus').equals('conflict').toArray()
+  const promptConflicts = await db.notes.where('syncStatus').equals('conflict').toArray()
   const result: ConflictItem[] = []
 
   for (const p of promptConflicts) {
@@ -33,13 +33,13 @@ export async function getConflicts(): Promise<ConflictItem[]> {
 }
 
 export async function pushLocalChanges(): Promise<boolean> {
-  const prompts = await db.prompts.where('syncStatus').equals('local_pending').toArray()
+  const prompts = await db.notes.where('syncStatus').equals('local_pending').toArray()
   const folders = await db.folders.where('syncStatus').equals('local_pending').toArray()
 
   if (prompts.length) {
     await apiClient.post('/api/prompts/batch-upsert', { items: prompts })
     for (const p of prompts) {
-      await db.prompts.update(p.id, { syncStatus: 'synced' })
+      await db.notes.update(p.id, { syncStatus: 'synced' })
     }
   }
 
@@ -54,13 +54,13 @@ export async function pushLocalChanges(): Promise<boolean> {
 }
 
 export async function pullRemote(lastSyncAt?: string): Promise<boolean> {
-  const res = await apiClient.get<{ prompts: PromptItem[]; folders: PromptFolder[]; syncAt: string }>(
+  const res = await apiClient.get<{ prompts: Note[]; folders: PromptFolder[]; syncAt: string }>(
     `/api/sync/pull?lastSyncAt=${encodeURIComponent(lastSyncAt || '1970-01-01T00:00:00.000Z')}`
   )
   if (!res.success || !res.data) return false
 
   for (const p of res.data.prompts) {
-    const existing = await db.prompts.get(p.id)
+    const existing = await db.notes.get(p.id)
     if (!existing) {
       const parsed = {
         ...p,
@@ -72,10 +72,10 @@ export async function pullRemote(lastSyncAt?: string): Promise<boolean> {
         isArchived: Boolean(p.isArchived),
         syncStatus: 'synced' as const,
       }
-      await db.prompts.put(parsed)
+      await db.notes.put(parsed)
     } else if (existing.syncStatus === 'local_pending') {
       // Conflict: both local and remote have changes
-      await db.prompts.update(p.id, { syncStatus: 'conflict' })
+      await db.notes.update(p.id, { syncStatus: 'conflict' })
     } else if (p.updatedAt > existing.updatedAt) {
       const parsed = {
         ...p,
@@ -87,7 +87,7 @@ export async function pullRemote(lastSyncAt?: string): Promise<boolean> {
         isArchived: Boolean(p.isArchived),
         syncStatus: 'synced' as const,
       }
-      await db.prompts.put(parsed)
+      await db.notes.put(parsed)
     }
   }
 
@@ -108,7 +108,7 @@ export async function pullRemote(lastSyncAt?: string): Promise<boolean> {
 export async function resolveConflict(id: string, type: 'prompt' | 'folder', choice: 'local' | 'remote'): Promise<void> {
   if (choice === 'local') {
     if (type === 'prompt') {
-      await db.prompts.update(id, { syncStatus: 'local_pending' })
+      await db.notes.update(id, { syncStatus: 'local_pending' })
     } else {
       await db.folders.update(id, { syncStatus: 'local_pending' })
     }
@@ -117,7 +117,7 @@ export async function resolveConflict(id: string, type: 'prompt' | 'folder', cho
     // For remote, we'll re-pull just this item
     // Since we don't have single-item pull, mark as synced and next pull will overwrite
     if (type === 'prompt') {
-      await db.prompts.update(id, { syncStatus: 'synced' })
+      await db.notes.update(id, { syncStatus: 'synced' })
     } else {
       await db.folders.update(id, { syncStatus: 'synced' })
     }
@@ -126,7 +126,7 @@ export async function resolveConflict(id: string, type: 'prompt' | 'folder', cho
 }
 
 export async function forcePullRemote(): Promise<boolean> {
-  const res = await apiClient.get<{ prompts: PromptItem[]; folders: PromptFolder[]; syncAt: string }>(
+  const res = await apiClient.get<{ prompts: Note[]; folders: PromptFolder[]; syncAt: string }>(
     `/api/sync/pull?lastSyncAt=1970-01-01T00:00:00.000Z`
   )
   if (!res.success || !res.data) return false
@@ -142,7 +142,7 @@ export async function forcePullRemote(): Promise<boolean> {
       isArchived: Boolean(p.isArchived),
       syncStatus: 'synced' as const,
     }
-    await db.prompts.put(parsed)
+    await db.notes.put(parsed)
   }
 
   for (const f of res.data.folders) {

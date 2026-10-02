@@ -40,13 +40,10 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await apiClient.get<{ email: string }>('/api/auth/me')
       if (res.success && res.data?.email) {
         user.value = { email: res.data.email }
-      } else {
-        token.value = ''
-        localStorage.removeItem('pn_token')
       }
+      // 401 已由 apiClient 集中处理（清 token + 跳登录页）
     } catch {
-      token.value = ''
-      localStorage.removeItem('pn_token')
+      // 网络错误：本地优先应用保持可用，不清除 token
     }
   }
 

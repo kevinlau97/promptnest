@@ -1,9 +1,9 @@
 <template>
   <div v-if="needRefresh" class="fixed bottom-4 right-4 z-50 rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-lg dark:bg-white dark:text-gray-900">
     <div class="flex items-center gap-3">
-      <span>New version available</span>
+      <span>有新版本可用</span>
       <button class="rounded bg-primary-600 px-3 py-1 text-xs font-medium hover:bg-primary-700" @click="updateServiceWorker">
-        Reload
+        刷新
       </button>
       <button class="text-xs text-gray-400 hover:text-white dark:text-gray-500 dark:hover:text-gray-900" @click="needRefresh = false">
         Dismiss

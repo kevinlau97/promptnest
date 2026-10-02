@@ -3,6 +3,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { serve } from '@hono/node-server'
 import { logger } from 'hono/logger'
 import { cors } from 'hono/cors'
+import { resolve } from 'path'
 import auth from './routes/auth.js'
 import prompts from './routes/prompts.js'
 import folders from './routes/folders.js'
@@ -30,9 +31,10 @@ app.route('/api/capture', capture)
 app.route('/api/health', health)
 app.route('/api/upload', upload)
 
-// Serve frontend build in production
-app.use('*', serveStatic({ root: '../web/dist' }))
-app.use('*', serveStatic({ path: '../web/dist/index.html' }))
+// Serve frontend build - use absolute path
+const webDistPath = resolve(import.meta.dirname, '../../web/dist')
+app.use('*', serveStatic({ root: webDistPath }))
+app.use('*', serveStatic({ path: resolve(webDistPath, 'index.html') }))
 
 const port = parseInt(process.env.PORT || '3000')
 

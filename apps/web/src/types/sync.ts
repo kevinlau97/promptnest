@@ -1,3 +1,6 @@
+import type { Note } from './note'
+import type { PromptFolder } from './folder'
+
 export type SyncStatus = 'synced' | 'local_pending' | 'remote_pending' | 'conflict'
 
 export interface SyncSummary {
@@ -10,8 +13,8 @@ export interface SyncSummary {
 }
 
 export interface SyncChangeSet {
-  prompts: {
-    upserts: import('./prompt').PromptItem[]
+  notes: {
+    upserts: Note[]
     deletes: string[]
   }
   folders: {
@@ -20,5 +23,3 @@ export interface SyncChangeSet {
   }
   syncAt: string
 }
-
-import type { PromptFolder } from './folder'

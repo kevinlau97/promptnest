@@ -30,7 +30,7 @@ export async function getChildFolders(parentId: string): Promise<PromptFolder[]>
 }
 
 export function getFolderPath(folders: PromptFolder[], folderId: string | null | undefined): string {
-  if (!folderId) return 'Uncategorized'
+  if (!folderId) return ''
   const map = new Map(folders.map((f) => [f.id, f]))
   const parts: string[] = []
   let current = map.get(folderId)
@@ -38,7 +38,7 @@ export function getFolderPath(folders: PromptFolder[], folderId: string | null |
     parts.unshift(current.name)
     current = current.parentId ? map.get(current.parentId) : undefined
   }
-  return parts.join(' / ') || 'Uncategorized'
+  return parts.join(' / ') || ''
 }
 
 export function buildFolderTree(folders: PromptFolder[]): FolderTreeNode[] {

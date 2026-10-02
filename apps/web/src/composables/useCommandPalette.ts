@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import type { PromptItem } from '@/types/prompt'
+import type { Note } from '@/types/note'
 
 export interface PaletteItem {
   id: string
@@ -10,7 +10,7 @@ export interface PaletteItem {
 }
 
 export function useCommandPalette(
-  prompts: Ref<PromptItem[]>,
+  prompts: Ref<Note[]>,
   onSelectPrompt: (id: string) => void,
   onNewPrompt: () => void,
   onGoSettings: () => void,
@@ -22,9 +22,9 @@ export function useCommandPalette(
   const items = computed<PaletteItem[]>(() => {
     const q = query.value.toLowerCase().trim()
     const list: PaletteItem[] = [
-      { id: 'new', title: 'New Prompt', subtitle: 'Create a new prompt', action: () => { onNewPrompt(); open.value = false } },
-      { id: 'sync', title: 'Sync Now', subtitle: 'Push local changes to server', action: () => { onSync(); open.value = false } },
-      { id: 'settings', title: 'Settings', subtitle: 'Open settings page', action: () => { onGoSettings(); open.value = false } },
+      { id: 'new', title: '新建笔记', subtitle: '创建一条新笔记', action: () => { onNewPrompt(); open.value = false } },
+      { id: 'sync', title: '立即同步', subtitle: '将本地变更同步到服务器', action: () => { onSync(); open.value = false } },
+      { id: 'settings', title: '设置', subtitle: '打开设置页面', action: () => { onGoSettings(); open.value = false } },
     ]
 
     for (const p of prompts.value.slice(0, 50)) {

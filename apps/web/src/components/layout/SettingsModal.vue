@@ -1,7 +1,6 @@
 <template>
-  <BaseModal :model-value="modelValue" title="Settings" @update:model-value="val => emit('update:modelValue', val)">
-    <div class="max-h-[70vh] overflow-y-auto pr-1">
-      <div class="space-y-6">
+  <BaseModal :model-value="modelValue" title="设置" @update:model-value="val => emit('update:modelValue', val)">
+    <div class="space-y-6">
         <!-- Appearance -->
         <section>
           <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Appearance</h3>
@@ -23,18 +22,18 @@
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600 dark:text-gray-400">Default View</span>
               <select v-model="settings.viewMode" class="input w-32 text-sm" @change="settings.save({ viewMode: settings.viewMode })">
-                <option value="card">Card</option>
-                <option value="compact">Compact</option>
+                <option value="card">卡片</option>
+                <option value="compact">紧凑</option>
               </select>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600 dark:text-gray-400">Default Sort</span>
               <select v-model="settings.sortBy" class="input w-40 text-sm" @change="settings.save({ sortBy: settings.sortBy })">
-                <option value="updatedAt">Recently Updated</option>
-                <option value="createdAt">Created</option>
-                <option value="lastUsedAt">Recently Used</option>
-                <option value="useCount">Most Used</option>
-                <option value="title">Title</option>
+                <option value="updatedAt">最近更新</option>
+                <option value="createdAt">创建时间</option>
+                <option value="lastUsedAt">最近使用</option>
+                <option value="useCount">使用最多</option>
+                <option value="title">标题</option>
               </select>
             </div>
           </div>
@@ -45,7 +44,7 @@
           <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Local Data</h3>
           <div class="grid grid-cols-3 gap-3 text-center">
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-              <div class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ promptStore.prompts.length }}</div>
+              <div class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ noteStore.notes.length }}</div>
               <div class="text-xs text-gray-500">Prompts</div>
             </div>
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
@@ -54,19 +53,19 @@
             </div>
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
               <div class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ syncStore.pendingCount }}</div>
-              <div class="text-xs text-gray-500">Unsynced</div>
+              <div class="text-xs text-gray-500">未同步</div>
             </div>
           </div>
         </section>
 
-        <!-- Sync -->
+        <!-- 同步 -->
         <section>
-          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Sync & Data</h3>
+          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">同步 & Data</h3>
           <div class="flex flex-wrap gap-2">
-            <button class="btn-primary text-xs" @click="handleSync">Sync Now</button>
-            <button class="btn-secondary text-xs" @click="exportJson">Export JSON</button>
-            <button class="btn-secondary text-xs" @click="exportMarkdown">Export Markdown</button>
-            <button class="btn-secondary text-xs" @click="showImport = true">Import JSON</button>
+            <button class="btn-primary text-xs" @click="handle同步">同步 Now</button>
+            <button class="btn-secondary text-xs" @click="exportJson">导出 JSON</button>
+            <button class="btn-secondary text-xs" @click="exportMarkdown">导出 Markdown</button>
+            <button class="btn-secondary text-xs" @click="show导入 = true">导入 JSON</button>
             <button class="btn-secondary text-xs" @click="forcePull">Force Pull</button>
             <button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30" @click="confirmClear">Clear Local Data</button>
           </div>
@@ -93,34 +92,42 @@
           </div>
         </section>
 
+        <!-- Account -->
+        <section>
+          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Account</h3>
+          <div class="flex items-center justify-between">
+            <span class="truncate text-sm text-gray-600 dark:text-gray-400">{{ auth.user?.email || '未登录' }}</span>
+            <button class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30" @click="handleLogout">登出</button>
+          </div>
+        </section>
+
         <!-- About -->
         <section>
           <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">About</h3>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">PromptNest v0.1.0</p>
-              <p class="text-xs text-gray-400">PWA: {{ pwaStatus }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Memos v0.1.0</p>
+              <p class="text-xs text-gray-400">PWA状态: {{ pwaStatus }}</p>
             </div>
             <button v-if="canInstall" class="btn-primary text-xs" @click="installPwa">Install App</button>
           </div>
         </section>
       </div>
-    </div>
 
-    <BaseModal v-model="showImport" title="Import JSON">
+    <BaseModal v-model="show导入" title="导入 JSON">
       <div class="space-y-3">
         <textarea v-model="importJson" class="textarea h-32 font-mono text-xs" placeholder="Paste JSON here..." />
         <div class="flex items-center gap-2">
-          <span class="text-xs">On duplicate:</span>
+          <span class="text-xs">重复项处理:</span>
           <select v-model="importMode" class="input w-32 text-xs">
-            <option value="skip">Skip</option>
-            <option value="overwrite">Overwrite</option>
-            <option value="copy">Copy</option>
+            <option value="skip">跳过</option>
+            <option value="overwrite">覆盖</option>
+            <option value="copy">复制</option>
           </select>
         </div>
         <div class="flex justify-end gap-2">
-          <button class="btn-secondary text-xs" @click="showImport = false">Cancel</button>
-          <button class="btn-primary text-xs" @click="doImport">Import</button>
+          <button class="btn-secondary text-xs" @click="show导入 = false">Cancel</button>
+          <button class="btn-primary text-xs" @click="do导入">导入</button>
         </div>
       </div>
     </BaseModal>
@@ -140,10 +147,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { usePromptStore } from '@/stores/prompt'
+import { useRouter } from 'vue-router'
+import { useNoteStore } from '@/stores/note'
 import { useFolderStore } from '@/stores/folder'
 import { useSyncStore } from '@/stores/sync'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { db } from '@/lib/db/schema'
@@ -159,17 +168,19 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
-const promptStore = usePromptStore()
+const noteStore = useNoteStore()
 const folderStore = useFolderStore()
 const syncStore = useSyncStore()
 const settings = useSettingsStore()
+const auth = useAuthStore()
+const router = useRouter()
 const { success, error } = useToast()
 const { state: confirmState, confirm: showConfirm, close: confirmClose } = useConfirm()
 
 const pwaStatus = ref('Unknown')
 const canInstall = ref(false)
 let deferredPrompt: any = null
-const showImport = ref(false)
+const show导入 = ref(false)
 const importJson = ref('')
 const importMode = ref<'skip' | 'overwrite' | 'copy'>('skip')
 const conflicts = ref<ConflictItem[]>([])
@@ -191,61 +202,66 @@ onMounted(async () => {
   })
 })
 
-async function handleSync() {
+async function handle同步() {
   syncStore.setSyncing(true)
   try {
     await syncAll()
-    await promptStore.load()
+    await noteStore.load()
     await folderStore.load()
     const summary = await getSyncSummary()
     syncStore.setPending(summary.localPending)
     syncStore.setConflicts(summary.conflicts)
-    success('Synced')
+    success('同步ed')
   } catch {
-    error('Sync failed')
+    error('同步 failed')
   } finally {
     syncStore.setSyncing(false)
   }
+}
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
 }
 
 function exportJson() {
   const data = {
     appVersion: '0.1.0',
     exportTime: new Date().toISOString(),
-    prompts: promptStore.prompts,
+    prompts: noteStore.notes,
     folders: folderStore.folders,
   }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `promptnest-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `memos-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
-  success('Exported')
+  success('导出ed')
 }
 
 function exportMarkdown() {
-  const md = exportAllToMarkdown(promptStore.prompts, folderStore.folders)
+  const md = exportAllToMarkdown(noteStore.notes, folderStore.folders)
   const blob = new Blob([md], { type: 'text/markdown' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `promptnest-${new Date().toISOString().slice(0, 10)}.md`
+  a.download = `memos-${new Date().toISOString().slice(0, 10)}.md`
   a.click()
   URL.revokeObjectURL(url)
-  success('Exported as Markdown')
+  success('导出ed as Markdown')
 }
 
-async function doImport() {
+async function do导入() {
   try {
     const data = JSON.parse(importJson.value)
     if (data.prompts) {
       for (const p of data.prompts) {
-        const existing = await db.prompts.get(p.id)
+        const existing = await db.notes.get(p.id)
         if (existing && importMode.value === 'skip') continue
         const id = existing && importMode.value === 'copy' ? generateId() : p.id
-        await db.prompts.put({ ...p, id, syncStatus: 'local_pending', updatedAt: new Date().toISOString() })
+        await db.notes.put({ ...p, id, syncStatus: 'local_pending', updatedAt: new Date().toISOString() })
       }
     }
     if (data.folders) {
@@ -256,10 +272,10 @@ async function doImport() {
         await db.folders.put({ ...f, id, syncStatus: 'local_pending', updatedAt: new Date().toISOString() })
       }
     }
-    await promptStore.load()
+    await noteStore.load()
     await folderStore.load()
-    success('Imported')
-    showImport.value = false
+    success('导入ed')
+    show导入.value = false
     importJson.value = ''
   } catch {
     error('Invalid JSON')
@@ -277,7 +293,7 @@ async function forcePull() {
   syncStore.setSyncing(true)
   try {
     await forcePullRemote()
-    await promptStore.load()
+    await noteStore.load()
     await folderStore.load()
     syncStore.setPending(0)
     syncStore.setConflicts(0)
@@ -297,16 +313,16 @@ async function confirmClear() {
     variant: 'danger',
   })
   if (!ok) return
-  await db.prompts.clear()
+  await db.notes.clear()
   await db.folders.clear()
   await db.versions.clear()
-  await promptStore.load()
+  await noteStore.load()
   await folderStore.load()
   success('Local data cleared')
 }
 
 async function loadConflicts() {
-  const allPrompts = await db.prompts.where('syncStatus').equals('conflict').toArray()
+  const allPrompts = await db.notes.where('syncStatus').equals('conflict').toArray()
   conflicts.value = allPrompts.map((p) => ({ id: p.id, type: 'prompt' as const, local: p, remote: p }))
   showConflicts.value = true
 }
@@ -314,7 +330,7 @@ async function loadConflicts() {
 async function resolve(c: ConflictItem, choice: 'local' | 'remote') {
   await resolveConflict(c.id, c.type, choice)
   await loadConflicts()
-  await promptStore.load()
+  await noteStore.load()
   await folderStore.load()
   const summary = await getSyncSummary()
   syncStore.setConflicts(summary.conflicts)

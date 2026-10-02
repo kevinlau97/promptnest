@@ -5,12 +5,9 @@ services:
     build: .
     ports:
       - "3000:3000"
-    environment:
-      - ADMIN_EMAIL=admin@example.com
-      - ADMIN_PASSWORD=changeme
-      - SESSION_SECRET=${SESSION_SECRET:-changeme-to-random-string}
-      - PORT=3000
-      - DATABASE_PATH=/data/promptnest.db
+    env_file:
+      - .env
+    container_name: promptnest
     volumes:
       - prompt-nest-data:/data
     restart: unless-stopped

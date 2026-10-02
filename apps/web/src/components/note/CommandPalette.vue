@@ -17,7 +17,7 @@
               ref="inputRef"
               v-model="query"
               class="w-full bg-transparent text-sm outline-none placeholder-gray-400 dark:text-gray-100"
-              placeholder="Search prompts or commands..."
+              placeholder="搜索笔记或命令..."
               @keydown.down.prevent="selectedIndex = Math.min(selectedIndex + 1, filteredItems.length - 1)"
               @keydown.up.prevent="selectedIndex = Math.max(selectedIndex - 1, 0)"
               @keydown.enter.prevent="selectCurrent"

@@ -1,13 +1,13 @@
 import { computed, reactive, ref, type Ref } from 'vue'
-import type { PromptVariable } from '@/types/prompt'
+import type { NoteVariable } from '@/types/note'
 
-export function usePromptVariables(content: Ref<string>) {
+export function useNoteVariables(content: Ref<string>) {
   const values = ref<Record<string, string>>({})
 
-  const detected = computed<PromptVariable[]>(() => {
+  const detected = computed<NoteVariable[]>(() => {
     const regex = /\{\{(\s*[a-zA-Z0-9_]+\s*)\}\}/g
     const matches = Array.from(content.value.matchAll(regex))
-    const vars: PromptVariable[] = []
+    const vars: NoteVariable[] = []
     const seen = new Set<string>()
     for (const m of matches) {
       const name = m[1].trim()

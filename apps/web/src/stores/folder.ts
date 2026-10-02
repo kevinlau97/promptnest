@@ -8,7 +8,7 @@ import {
   buildFolderTree,
   getFolderDescendants,
 } from '@/lib/db/folderRepository'
-import { updatePrompt } from '@/lib/db/promptRepository'
+import { updateNote } from '@/lib/db/noteRepository'
 import type { PromptFolder } from '@/types/folder'
 import { generateId } from '@/lib/utils/id'
 import { now } from '@/lib/utils/date'
@@ -58,12 +58,12 @@ export const useFolderStore = defineStore('folder', () => {
     const folder = folders.value.find((f) => f.id === id)
     const targetFolderId = moveToParent ? folder?.parentId || null : null
 
-    // Reassign prompts in this folder to parent or uncategorized
-    const { usePromptStore } = await import('@/stores/prompt')
-    const promptStore = usePromptStore()
-    for (const p of promptStore.prompts) {
+    // Reassign notes in this folder to parent or uncategorized
+    const { useNoteStore } = await import('@/stores/note')
+    const noteStore = useNoteStore()
+    for (const p of noteStore.notes) {
       if (p.folderId === id) {
-        await updatePrompt(p.id, { folderId: targetFolderId, syncStatus: 'local_pending' })
+        await updateNote(p.id, { folderId: targetFolderId, syncStatus: 'local_pending' })
         p.folderId = targetFolderId
         p.syncStatus = 'local_pending'
       }

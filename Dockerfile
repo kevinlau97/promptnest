@@ -1,7 +1,8 @@
 # Build stage
 FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package*.json .
+RUN apk add --no-cache python3 make g++
+COPY package*.json ./
 COPY apps/web/package*.json apps/web/
 COPY apps/server/package*.json apps/server/
 RUN npm install
@@ -22,7 +23,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/server/node_modules ./server/node_modules
 COPY --from=builder /app/apps/server/package.json ./server/package.json
 COPY --from=builder /app/apps/server/fix-imports.mjs ./server/fix-imports.mjs
-COPY package.json .
+COPY package.json ./
 EXPOSE 3000
 VOLUME ["/data"]
 CMD ["node", "server/index.js"]

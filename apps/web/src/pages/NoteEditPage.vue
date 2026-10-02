@@ -19,7 +19,7 @@
             {{ form.isArchived ? 'Unarchive' : 'Archive' }}
           </button>
           <button v-if="isEdit" class="btn-secondary" @click="toggleShare">
-            {{ shareSlug ? 'Unshare' : 'Share' }}
+            {{ shareSlug ? '取消分享' : '分享' }}
           </button>
           <button class="btn-primary" :disabled="saving || !form.content.trim()" @click="save">
             {{ saving ? 'Saving...' : 'Save' }}
@@ -41,7 +41,7 @@
 
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <select v-model="form.type" class="input">
-                <option v-for="t in PROMPT_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
+                <option v-for="t in NOTE_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
               <select v-model="form.folderId" class="input">
                 <option :value="null">No folder</option>
@@ -86,7 +86,7 @@
                 ref="contentTextarea"
                 v-model="form.content"
                 class="textarea min-h-[200px] font-mono text-sm"
-                placeholder="Write your prompt here... (paste or drop images)"
+                placeholder="在此编写笔记内容...（粘贴或拖拽图片）"
                 required
                 @paste="handlePaste"
                 @dragover.prevent="isDragging = true"
@@ -95,7 +95,37 @@
                 :class="isDragging ? 'ring-2 ring-primary-400' : ''"
               />
               <div v-if="imageLoading" class="mt-1 text-xs text-primary-600 dark:text-primary-400">
-                Processing image...
+                处理图片中...
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-500">Paste Image</label>
+              <div
+                ref="pasteZone"
+                tabindex="0"
+                class="flex min-h-[80px] cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-4 py-3 text-center text-sm transition-colors focus:outline-none"
+                :class="[
+                  pasteZoneFocused
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                    : 'border-gray-300 bg-gray-50 text-gray-500 hover:border-primary-400 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800',
+                  isDraggingPaste ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : '',
+                ]"
+                @click="focusPasteZone"
+                @focus="pasteZoneFocused = true"
+                @blur="pasteZoneFocused = false"
+                @paste="handlePaste"
+                @dragover.prevent="isDraggingPaste = true"
+                @dragleave.prevent="isDraggingPaste = false"
+                @drop.prevent="handleDropPaste"
+              >
+                <div v-if="imageLoading" class="text-primary-600 dark:text-primary-400">
+                  Uploading image...
+                </div>
+                <div v-else>
+                  <div class="font-medium">{{ pasteZoneFocused ? 'Press ⌘V / Ctrl+V to paste image' : 'Click here, then paste image (⌘V)' }}</div>
+                  <div class="mt-0.5 text-xs opacity-70">or drag &amp; drop image file</div>
+                </div>
               </div>
             </div>
 
@@ -103,13 +133,13 @@
               <label class="mb-1 block text-xs font-medium text-gray-500">Images</label>
               <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 <div
-                  v-for="(url, i) in form.images"
-                  :key="url + i"
+                  v-for="(img, i) in form.images"
+                  :key="(typeof img === 'string' ? img : img.url) + i"
                   class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
                 >
-                  <img :src="url" class="h-full w-full object-cover" />
+                  <img :src="typeof img === 'string' ? img : img.url" crossorigin="anonymous" class="h-full w-full object-cover" />
                   <button
-                    class="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
                     @click="removeImage(i)"
                   >
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -167,7 +197,7 @@
             <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
               <pre class="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">{{ variables.finalContent }}</pre>
             </div>
-            <button class="btn-primary w-full" @click="copyFinal">Copy Final Prompt</button>
+            <button class="btn-primary w-full" @click="copyFinal">复制最终文本</button>
           </div>
         </div>
       </div>
@@ -190,29 +220,29 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { usePromptStore } from '@/stores/prompt'
+import { useNoteStore } from '@/stores/note'
 import { useFolderStore } from '@/stores/folder'
 import { useToast } from '@/composables/useToast'
-import { usePromptVariables } from '@/composables/usePromptVariables'
+import { useNoteVariables } from '@/composables/useNoteVariables'
 import { useDebounceFn } from '@vueuse/core'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useAutoResize } from '@/composables/useAutoResize'
 import { useConfirm } from '@/composables/useConfirm'
 import { useImageUpload } from '@/composables/useImageUpload'
-import { PROMPT_TYPES } from '@/types/prompt'
+import { NOTE_TYPES } from '@/types/note'
 import { generateId, generateSlug } from '@/lib/utils/id'
 import { getFolderPath } from '@/lib/db/folderRepository'
 import { formatDate } from '@/lib/utils/date'
-import { getVersionsByPromptId } from '@/lib/db/versionRepository'
+import { getVersionsByNoteId } from '@/lib/db/versionRepository'
 import { apiClient } from '@/lib/api/client'
-import type { PromptVersion } from '@/types/prompt'
+import type { NoteVersion } from '@/types/note'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseToast from '@/components/ui/BaseToast.vue'
 import BaseConfirm from '@/components/ui/BaseConfirm.vue'
 
 const route = useRoute()
 const router = useRouter()
-const promptStore = usePromptStore()
+const noteStore = useNoteStore()
 const folderStore = useFolderStore()
 const { success, error: toastError } = useToast()
 
@@ -230,8 +260,24 @@ const shareSlug = ref('')
 const tagInput = ref('')
 const isDirty = ref(false)
 const showVersions = ref(false)
-const versions = ref<PromptVersion[]>([])
+const versions = ref<NoteVersion[]>([])
 const isDragging = ref(false)
+const isDraggingPaste = ref(false)
+const pasteZone = ref<HTMLDivElement>()
+const pasteZoneFocused = ref(false)
+
+function focusPasteZone() {
+  pasteZone.value?.focus()
+}
+
+async function handleDropPaste(e: DragEvent) {
+  isDraggingPaste.value = false
+  const files = e.dataTransfer?.files
+  if (!files || files.length === 0) return
+  const imageFile = Array.from(files).find((f) => f.type.startsWith('image/'))
+  if (!imageFile) return
+  await processImageFile(imageFile)
+}
 
 const { loading: imageLoading, uploadImage } = useImageUpload()
 
@@ -239,11 +285,11 @@ const form = reactive({
   title: '',
   content: '',
   description: '',
-  type: 'other' as import('@/types/prompt').PromptType,
+  type: 'other' as import('@/types/note').NoteType,
   folderId: null as string | null,
   tags: [] as string[],
   links: [] as { id: string; title?: string; url: string }[],
-  images: [] as string[],
+  images: [] as { url: string; filename?: string; type?: string }[],
   isFavorite: false,
   isArchived: false,
 })
@@ -258,7 +304,7 @@ function saveDraft() {
     title: form.title,
     content: form.content,
     description: form.description,
-    type: form.type,
+    type: form.type || 'general',
     folderId: form.folderId,
     tags: form.tags,
     links: form.links,
@@ -300,7 +346,7 @@ watch(() => [form.title, form.content, form.description, form.type, form.folderI
   autoSaveDraft()
 }, { deep: true })
 
-const variables = usePromptVariables(computed(() => form.content))
+const variables = useNoteVariables(computed(() => form.content))
 
 const contentTextarea = ref<HTMLTextAreaElement>()
 const { resize: resizeTextarea, init: initTextarea } = useAutoResize(contentTextarea, 8, 30)
@@ -308,19 +354,19 @@ watch(() => form.content, () => {
   resizeTextarea()
 })
 
-const aiActions = ['Improve', 'Concise', 'To English', 'To Image Prompt', 'To Video Prompt', 'To Claude Code', 'Extract Variables']
+const aiActions = ['优化', '精简', '转英文', '转图像提示词', '转视频提示词', '转 Claude Code', 'Extract Variables']
 
 onMounted(async () => {
-  if (!promptStore.loaded) await promptStore.load()
+  if (!noteStore.loaded) await noteStore.load()
   if (!folderStore.loaded) await folderStore.load()
 
   if (isEdit.value) {
-    const p = promptStore.getById(promptId.value)
+    const p = noteStore.getById(promptId.value)
     if (p) {
       form.title = p.title
       form.content = p.content
       form.description = p.description || ''
-      form.type = p.type
+      form.type = p.type || 'general'
       form.folderId = p.folderId || null
       form.tags = [...p.tags]
       form.links = p.links.map((l) => ({ ...l }))
@@ -331,7 +377,7 @@ onMounted(async () => {
     }
   }
   if (isEdit.value) {
-    versions.value = await getVersionsByPromptId(promptId.value)
+    versions.value = await getVersionsByNoteId(promptId.value)
   }
 
   // Load draft if exists and newer than saved content
@@ -340,7 +386,7 @@ onMounted(async () => {
     const draftRaw = localStorage.getItem(getDraftKey())
     if (draftRaw) {
       const draft = JSON.parse(draftRaw)
-      const saved = promptStore.getById(promptId.value)
+      const saved = noteStore.getById(promptId.value)
       if (saved && draft.savedAt > saved.updatedAt) {
         isDirty.value = true
         success('Draft restored')
@@ -370,11 +416,11 @@ async function save() {
   saving.value = true
   try {
     if (isEdit.value) {
-      await promptStore.update(promptId.value, {
+      await noteStore.update(promptId.value, {
         title: form.title,
         content: form.content,
         description: form.description,
-        type: form.type,
+        type: form.type || 'general',
         folderId: form.folderId,
         tags: [...form.tags],
         links: form.links.map((l) => ({ ...l })),
@@ -383,11 +429,11 @@ async function save() {
         isArchived: form.isArchived,
       })
     } else {
-      const p = await promptStore.add({
+      const p = await noteStore.add({
         title: form.title,
         content: form.content,
         description: form.description,
-        type: form.type,
+        type: form.type || 'general',
         folderId: form.folderId,
         tags: [...form.tags],
         links: form.links.map((l) => ({ ...l })),
@@ -409,7 +455,7 @@ async function save() {
 
 function copyContent() {
   navigator.clipboard.writeText(form.content)
-  if (isEdit.value) promptStore.recordUse(promptId.value)
+  if (isEdit.value) noteStore.recordUse(promptId.value)
   success('Copied content')
 }
 
@@ -417,13 +463,13 @@ function copyMarkdown() {
   const path = getFolderPath(folderStore.folders, form.folderId)
   const md = `# ${form.title || 'Untitled'}\n\n**Path:** ${path}\n**Type:** ${form.type}\n${form.tags.length ? `**Tags:** ${form.tags.map((t) => `#${t}`).join(' ')}\n` : ''}\n## Description\n${form.description || ''}\n\n## Prompt\n${form.content}\n\n${form.links.length ? `## Links\n${form.links.map((l) => `- [${l.title || l.url}](${l.url})`).join('\n')}\n` : ''}`
   navigator.clipboard.writeText(md)
-  if (isEdit.value) promptStore.recordUse(promptId.value)
+  if (isEdit.value) noteStore.recordUse(promptId.value)
   success('Copied as Markdown')
 }
 
 function copyFinal() {
   navigator.clipboard.writeText(variables.finalContent)
-  if (isEdit.value) promptStore.recordUse(promptId.value)
+  if (isEdit.value) noteStore.recordUse(promptId.value)
   success('Copied final prompt')
 }
 
@@ -450,17 +496,17 @@ async function goBack() {
 
 async function confirmDelete() {
   const ok = await showConfirm({
-    title: 'Delete Prompt',
-    message: 'Are you sure you want to delete this prompt?',
+    title: '删除笔记',
+    message: '确定要删除这条笔记吗？',
     confirmText: 'Delete',
     variant: 'danger',
   })
   if (!ok) return
-  promptStore.remove(promptId.value)
+  noteStore.remove(promptId.value)
   router.push('/')
 }
 
-async function restoreVersion(v: PromptVersion) {
+async function restoreVersion(v: NoteVersion) {
   const ok = await showConfirm({
     title: 'Restore Version',
     message: 'Restore this version? Current unsaved changes will be lost.',
@@ -471,7 +517,7 @@ async function restoreVersion(v: PromptVersion) {
   form.title = v.snapshot.title
   form.content = v.snapshot.content
   form.description = v.snapshot.description || ''
-  form.type = v.snapshot.type
+  form.type = v.snapshot.type || 'general'
   form.folderId = v.snapshot.folderId || null
   form.tags = [...v.snapshot.tags]
   form.links = v.snapshot.links.map((l) => ({ ...l }))
@@ -522,7 +568,7 @@ async function handleDrop(e: DragEvent) {
 async function processImageFile(file: File) {
   try {
     const url = await uploadImage(file)
-    form.images.push(url)
+    form.images.push({ url, filename: file.name, type: file.type })
     success('Image uploaded')
   } catch (e: any) {
     toastError(e?.message || 'Image upload failed')

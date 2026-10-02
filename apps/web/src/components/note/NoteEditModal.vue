@@ -1,6 +1,6 @@
 <template>
-  <BaseModal v-model="localOpen" :title="isEdit ? 'Edit Prompt' : 'New Prompt'" size="full">
-    <div class="flex max-h-[80vh] flex-col gap-4 overflow-y-auto">
+  <BaseModal v-model="localOpen" :title="isEdit ? '编辑笔记' : '新建笔记'" size="full">
+    <div class="flex h-full flex-col gap-3 overflow-y-auto md:gap-4 md:max-h-[80vh]">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <button
@@ -8,33 +8,33 @@
             :class="form.isFavorite ? '' : 'text-gray-400'"
             @click="form.isFavorite = !form.isFavorite"
           >
-            <svg class="h-5 w-5" :fill="form.isFavorite ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+            <svg class="h-5 w-5" :fill="form.isFavorite ? '当前Color' : 'none'" stroke="当前Color" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
           </button>
           <button class="btn-secondary text-xs" :class="form.isArchived ? 'bg-gray-300 dark:bg-gray-700' : ''" @click="form.isArchived = !form.isArchived">
-            {{ form.isArchived ? 'Unarchive' : 'Archive' }}
+            {{ form.isArchived ? '取消归档' : '归档' }}
           </button>
           <button v-if="isEdit" class="btn-secondary text-xs" @click="toggleShare">
-            {{ shareSlug ? 'Unshare' : 'Share' }}
+            {{ shareSlug ? '取消分享' : '分享' }}
           </button>
         </div>
         <button class="btn-primary text-xs" :disabled="saving || !form.content.trim()" @click="save">
-          {{ saving ? 'Saving...' : 'Save' }}
+          {{ saving ? '保存中...' : '保存' }}
         </button>
       </div>
 
       <div v-if="shareSlug" class="flex items-center gap-2 text-xs">
-        <span class="text-gray-500">Share URL:</span>
+        <span class="text-gray-500">分享链接：</span>
         <code class="rounded bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ shareUrl }}</code>
-        <button class="text-primary-600 hover:underline dark:text-primary-400" @click="copyShareUrl">Copy</button>
+        <button class="text-primary-600 hover:underline dark:text-primary-400" @click="copyShareUrl">复制</button>
       </div>
 
       <div class="space-y-3">
-        <input v-model="form.title" class="input text-lg font-semibold" placeholder="Title (auto-generated if empty)" />
-        <input v-model="form.description" class="input" placeholder="Description (optional)" />
+        <input v-model="form.title" class="input text-lg font-semibold" placeholder="标题（留空将自动生成）" />
+        <input v-model="form.description" class="input" placeholder="描述（可选）" />
 
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="grid grid-cols-2 gap-3">
           <select v-model="form.type" class="input">
-            <option v-for="t in PROMPT_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
+            <option v-for="t in NOTE_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
           </select>
           <select v-model="form.folderId" class="input">
             <option :value="null">No folder</option>
@@ -43,7 +43,7 @@
         </div>
 
         <div>
-          <label class="mb-1 block text-xs font-medium text-gray-500">Tags</label>
+          <label class="mb-1 block text-xs font-medium text-gray-500">标签</label>
           <div class="flex flex-wrap items-center gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1.5 dark:border-gray-700 dark:bg-gray-800">
             <span v-for="tag in form.tags" :key="tag" class="inline-flex items-center gap-1 rounded bg-primary-50 px-2 py-0.5 text-xs text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
               #{{ tag }}
@@ -52,21 +52,40 @@
             <input
               v-model="tagInput"
               class="min-w-[80px] flex-1 bg-transparent text-sm outline-none"
-              placeholder="Add tag..."
+              placeholder="添加标签..."
               @keydown.enter.prevent="addTag"
               @keydown.backspace="!tagInput && form.tags.length && removeTag(form.tags[form.tags.length - 1])"
             />
           </div>
         </div>
 
-        <div>
-          <label class="mb-1 block text-xs font-medium text-gray-500">Links</label>
+        <!-- 链接：移动端可折叠 -->
+        <details class="group md:hidden">
+          <summary class="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+            <span>链接 ({{ form.links.length }})</span>
+            <svg class="h-4 w-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="mt-2 space-y-2">
+            <div v-for="(link, i) in form.links" :key="link.id" class="flex items-center gap-2">
+              <input v-model="link.title" class="input w-1/3 text-sm" placeholder="Title" />
+              <input v-model="link.url" class="input flex-1 text-sm" placeholder="https://..." />
+              <button class="rounded p-1 text-gray-400 hover:text-red-500" @click="form.links.splice(i, 1)">
+                <svg class="h-4 w-4" fill="none" stroke="当前Color" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+            <button class="btn-secondary text-xs" @click="form.links.push({ id: generateId(), url: '' })">+ Add Link</button>
+          </div>
+        </details>
+
+        <!-- 桌面端链接 -->
+        <div class="hidden md:block">
+          <label class="mb-1 block text-xs font-medium text-gray-500">链接</label>
           <div class="space-y-2">
             <div v-for="(link, i) in form.links" :key="link.id" class="flex items-center gap-2">
               <input v-model="link.title" class="input w-1/3 text-sm" placeholder="Title" />
               <input v-model="link.url" class="input flex-1 text-sm" placeholder="https://..." />
               <button class="rounded p-1 text-gray-400 hover:text-red-500" @click="form.links.splice(i, 1)">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <svg class="h-4 w-4" fill="none" stroke="当前Color" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
             <button class="btn-secondary text-xs" @click="form.links.push({ id: generateId(), url: '' })">+ Add Link</button>
@@ -79,7 +98,7 @@
             ref="contentTextarea"
             v-model="form.content"
             class="textarea min-h-[160px] font-mono text-sm"
-            placeholder="Write your prompt here... (paste or drop images)"
+            placeholder="在此编写笔记内容...（粘贴或拖拽图片）"
             required
             @paste="handlePaste"
             @dragover.prevent="isDragging = true"
@@ -88,24 +107,55 @@
             :class="isDragging ? 'ring-2 ring-primary-400' : ''"
           />
           <div v-if="imageLoading" class="mt-1 text-xs text-primary-600 dark:text-primary-400">
-            Processing image...
+            处理图片中...
           </div>
         </div>
 
+        <div class="hidden md:block">
+          <label class="mb-1 block text-xs font-medium text-gray-500">Paste Image</label>
+          <div
+            ref="pasteZone"
+            tabindex="0"
+            class="flex min-h-[80px] cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-4 py-3 text-center text-sm transition-colors focus:outline-none"
+            :class="[
+              pasteZoneFocused
+                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                : 'border-gray-300 bg-gray-50 text-gray-500 hover:border-primary-400 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800',
+              isDraggingPaste ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : '',
+            ]"
+            @click="focusPasteZone"
+            @focus="pasteZoneFocused = true"
+            @blur="pasteZoneFocused = false"
+            @paste="handlePaste"
+            @dragover.prevent="isDraggingPaste = true"
+            @dragleave.prevent="isDraggingPaste = false"
+            @drop.prevent="handleDropPaste"
+          >
+            <div v-if="imageLoading" class="text-primary-600 dark:text-primary-400">
+              Uploading image...
+            </div>
+            <div v-else>
+              <div class="font-medium">{{ pasteZoneFocused ? 'Press ⌘V / Ctrl+V to paste image' : 'Click here, then paste image (⌘V)' }}</div>
+              <div class="mt-0.5 text-xs opacity-70">or drag &amp; drop image file</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 图片：移动端优化布局 -->
         <div v-if="form.images.length" class="space-y-2">
           <label class="mb-1 block text-xs font-medium text-gray-500">Images</label>
-          <div class="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
             <div
-              v-for="(url, i) in form.images"
-              :key="url + i"
+              v-for="(img, i) in form.images"
+              :key="(typeof img === 'string' ? img : img.url) + i"
               class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
             >
-              <img :src="url" class="h-full w-full object-cover" />
+              <img :src="typeof img === 'string' ? img : img.url" crossorigin="anonymous" class="h-full w-full object-cover" />
               <button
-                class="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                class="absolute right-1 top-1 rounded-full bg-red-500 p-1.5 text-white opacity-100 shadow-sm"
                 @click="removeImage(i)"
               >
-                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <svg class="h-3 w-3" fill="none" stroke="当前Color" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
           </div>
@@ -128,13 +178,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { usePromptStore } from '@/stores/prompt'
+import { useNoteStore } from '@/stores/note'
 import { useFolderStore } from '@/stores/folder'
 import { useToast } from '@/composables/useToast'
 import { useImageUpload } from '@/composables/useImageUpload'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAutoResize } from '@/composables/useAutoResize'
-import { PROMPT_TYPES } from '@/types/prompt'
+import { NOTE_TYPES } from '@/types/note'
 import { generateId, generateSlug } from '@/lib/utils/id'
 import { apiClient } from '@/lib/api/client'
 import BaseModal from '@/components/ui/BaseModal.vue'
@@ -151,7 +201,7 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
-const promptStore = usePromptStore()
+const noteStore = useNoteStore()
 const folderStore = useFolderStore()
 const { success, error: toastError } = useToast()
 
@@ -172,6 +222,22 @@ const saving = ref(false)
 const shareSlug = ref('')
 const tagInput = ref('')
 const isDragging = ref(false)
+const isDraggingPaste = ref(false)
+const pasteZone = ref<HTMLDivElement>()
+const pasteZoneFocused = ref(false)
+
+function focusPasteZone() {
+  pasteZone.value?.focus()
+}
+
+async function handleDropPaste(e: DragEvent) {
+  isDraggingPaste.value = false
+  const files = e.dataTransfer?.files
+  if (!files || files.length === 0) return
+  const imageFile = Array.from(files).find((f) => f.type.startsWith('image/'))
+  if (!imageFile) return
+  await processImageFile(imageFile)
+}
 
 const { loading: imageLoading, uploadImage } = useImageUpload()
 
@@ -179,11 +245,11 @@ const form = reactive({
   title: '',
   content: '',
   description: '',
-  type: 'other' as import('@/types/prompt').PromptType,
+  type: 'other' as import('@/types/note').NoteType,
   folderId: null as string | null,
   tags: [] as string[],
   links: [] as { id: string; title?: string; url: string }[],
-  images: [] as string[],
+  images: [] as { url: string; filename?: string; type?: string }[],
   isFavorite: false,
   isArchived: false,
 })
@@ -204,15 +270,15 @@ function initForm() {
   tagInput.value = ''
   shareSlug.value = ''
   if (isEdit.value && props.promptId) {
-    const p = promptStore.getById(props.promptId)
+    const p = noteStore.getById(props.promptId)
     if (p) {
       form.title = p.title
       form.content = p.content
       form.description = p.description || ''
-      form.type = p.type
+      form.type = p.type || 'general'
       form.folderId = p.folderId || null
       form.tags = [...p.tags]
-      form.links = p.links.map((l) => ({ ...l }))
+      form.links = (p.links || []).map((l) => ({ ...l }))
       form.images = p.images || []
       form.isFavorite = p.isFavorite
       form.isArchived = p.isArchived
@@ -252,11 +318,11 @@ async function save() {
   saving.value = true
   try {
     if (isEdit.value && props.promptId) {
-      await promptStore.update(props.promptId, {
+      await noteStore.update(props.promptId, {
         title: form.title,
         content: form.content,
         description: form.description,
-        type: form.type,
+        type: form.type || 'general',
         folderId: form.folderId,
         tags: [...form.tags],
         links: form.links.map((l) => ({ ...l })),
@@ -265,11 +331,11 @@ async function save() {
         isArchived: form.isArchived,
       })
     } else {
-      await promptStore.add({
+      await noteStore.add({
         title: form.title,
         content: form.content,
         description: form.description,
-        type: form.type,
+        type: form.type || 'general',
         folderId: form.folderId,
         tags: [...form.tags],
         links: form.links.map((l) => ({ ...l })),
@@ -330,7 +396,7 @@ async function handleDrop(e: DragEvent) {
 async function processImageFile(file: File) {
   try {
     const url = await uploadImage(file)
-    form.images.push(url)
+    form.images.push({ url, filename: file.name, type: file.type })
     success('Image uploaded')
   } catch (e: any) {
     toastError(e?.message || 'Image upload failed')

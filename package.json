@@ -18,7 +18,13 @@
     "apps/*"
   ],
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "concurrently": "^8.2.2",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "marked": "^18.0.4",
+    "sqlite3": "^6.0.1"
   }
 }

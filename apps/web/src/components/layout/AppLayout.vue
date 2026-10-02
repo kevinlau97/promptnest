@@ -3,7 +3,7 @@
     <SyncStatusBar />
     <header class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
       <div class="flex items-center gap-2">
-        <span class="text-sm font-bold tracking-tight text-gray-900 dark:text-gray-100">PromptNest</span>
+        <span class="text-sm font-bold tracking-tight text-gray-900 dark:text-gray-100">Memos</span>
       </div>
       <div class="flex items-center gap-1">
         <ThemeToggle />

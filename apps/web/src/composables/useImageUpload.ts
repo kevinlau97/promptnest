@@ -3,7 +3,7 @@ import { useImageCompression } from './useImageCompression'
 import { apiClient } from '@/lib/api/client'
 
 export function useImageUpload() {
-  const { compressing, compressToAvif } = useImageCompression()
+  const { compressing, compressToWebp } = useImageCompression()
   const uploading = ref(false)
   const error = ref<string | null>(null)
 
@@ -12,10 +12,10 @@ export function useImageUpload() {
     uploading.value = true
 
     try {
-      const compressed = await compressToAvif(file)
+      const compressed = await compressToWebp(file)
 
       const formData = new FormData()
-      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.avif'))
+      formData.append('file', compressed, file.name.replace(/\.[^.]+$/, '.webp'))
 
       const res = await apiClient.postForm<{ url: string }>('/api/upload', formData)
 

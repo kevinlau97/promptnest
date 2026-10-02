@@ -12,7 +12,7 @@
         <div class="absolute inset-0 bg-black/40" @click="close" />
         <div class="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-white dark:bg-gray-800">
           <div class="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
-            <h3 class="text-base font-semibold">Folders</h3>
+            <h3 class="text-base font-semibold">文件夹</h3>
             <button class="rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close" @click="close">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -69,7 +69,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useScrollLock } from '@vueuse/core'
 import { onKeyStroke } from '@vueuse/core'
 import { useFolderStore } from '@/stores/folder'
-import { usePromptStore } from '@/stores/prompt'
+import { useNoteStore } from '@/stores/note'
 import { useSyncStore } from '@/stores/sync'
 import { useModalStack, isAnyModalOpen } from '@/composables/useModalStack'
 
@@ -77,7 +77,7 @@ const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void; (e: 'select-folder', id: string | null): void; (e: 'select-quick', key: string): void }>()
 
 const folderStore = useFolderStore()
-const promptStore = usePromptStore()
+const noteStore = useNoteStore()
 const syncStore = useSyncStore()
 
 const drawerRef = ref<HTMLDivElement>()
@@ -88,12 +88,12 @@ const selectedFolderId = ref<string | null>(null)
 const selectedQuick = ref('all')
 
 const quickEntries = computed(() => [
-  { key: 'all', label: 'All Prompts', count: promptStore.activePrompts.length },
-  { key: 'favorites', label: 'Favorites', count: promptStore.favoritePrompts.length },
-  { key: 'recent', label: 'Recently Used', count: promptStore.recentlyUsed.length },
-  { key: 'most', label: 'Most Used', count: promptStore.mostUsed.length },
-  { key: 'unsynced', label: 'Unsynced', count: syncStore.pendingCount },
-  { key: 'archived', label: 'Archived', count: promptStore.archivedPrompts.length },
+  { key: 'all', label: '全部笔记', count: noteStore.activeNotes.length },
+  { key: 'favorites', label: '收藏', count: noteStore.favoriteNotes.length },
+  { key: 'recent', label: '最近使用', count: noteStore.recentlyUsed.length },
+  { key: 'most', label: '最常使用', count: noteStore.mostUsed.length },
+  { key: 'unsynced', label: '未同步', count: syncStore.pendingCount },
+  { key: 'archived', label: '归档', count: noteStore.archivedNotes.length },
 ])
 
 watch(() => props.modelValue, (open) => {

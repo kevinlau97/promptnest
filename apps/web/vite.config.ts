@@ -7,21 +7,31 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
+          // bild.quarker.cc 图片：CacheFirst，允许缓存 opaque response
           {
-            urlPattern: /^https:\/\/.*/,
-            handler: 'NetworkFirst',
+            urlPattern: /^https:\/\/bild\.quarker\.cc\//,
+            handler: 'CacheFirst',
             options: {
-              cacheName: 'api-cache',
+              cacheName: 'bild-images',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24,
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
+          // 其他所有外部 HTTPS 请求：NetworkOnly，不缓存
+          {
+            urlPattern: ({ url }) => url.protocol === 'https:',
+            handler: 'NetworkOnly',
+          },
+          // WASM：CacheFirst
           {
             urlPattern: /\/node_modules\/wasm-vips\/.*|.*vips.*\.(wasm|js)$/,
             handler: 'CacheFirst',
@@ -36,7 +46,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'PromptNest',
+        name: 'Memos',
         short_name: 'Prompts',
         description: 'Personal prompt management tool',
         theme_color: '#111827',

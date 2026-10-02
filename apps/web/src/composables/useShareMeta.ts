@@ -4,8 +4,8 @@ export function useShareMeta(prompt: Ref<{ title: string; description?: string; 
   function update() {
     const p = prompt.value
     if (!p) return
-    document.title = p.title ? `${p.title} | PromptNest` : 'PromptNest'
-    const desc = p.description || p.content?.slice(0, 160) || 'Shared prompt from PromptNest'
+    document.title = p.title ? `${p.title} | Memos` : 'Memos'
+    const desc = p.description || p.content?.slice(0, 160) || '来自 NoteNest 的分享'
     updateMeta('description', desc)
     updateMeta('og:title', p.title)
     updateMeta('og:description', desc)
@@ -23,7 +23,7 @@ export function useShareMeta(prompt: Ref<{ title: string; description?: string; 
   }
 
   function reset() {
-    document.title = 'PromptNest'
+    document.title = 'Memos'
   }
 
   watch(prompt, update, { immediate: true })

@@ -1,23 +1,23 @@
 import { db } from './schema'
-import type { PromptItem, PromptVersion } from '@/types/prompt'
+import type { Note, NoteVersion } from '@/types/note'
 import { generateId } from '@/lib/utils/id'
 
 export async function createVersionSnapshot(
-  prompt: PromptItem,
-  reason: PromptVersion['reason'] = 'manual_save'
+  note: Note,
+  reason: NoteVersion['reason'] = 'manual_save'
 ): Promise<void> {
-  const snapshot: PromptVersion = {
+  const snapshot: NoteVersion = {
     id: generateId(),
-    promptId: prompt.id,
-    title: prompt.title,
-    content: prompt.content,
-    snapshot: { ...prompt },
+    noteId: note.id,
+    title: note.title,
+    content: note.content,
+    snapshot: { ...note },
     createdAt: new Date().toISOString(),
     reason,
   }
   await db.versions.add(snapshot)
 }
 
-export async function getVersionsByPromptId(promptId: string): Promise<PromptVersion[]> {
-  return db.versions.where('promptId').equals(promptId).reverse().sortBy('createdAt')
+export async function getVersionsByNoteId(noteId: string): Promise<NoteVersion[]> {
+  return db.versions.where('noteId').equals(noteId).reverse().sortBy('createdAt')
 }
