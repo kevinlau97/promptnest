@@ -37,14 +37,16 @@ export async function pushLocalChanges(): Promise<boolean> {
   const folders = await db.folders.where('syncStatus').equals('local_pending').toArray()
 
   if (prompts.length) {
-    await apiClient.post('/api/prompts/batch-upsert', { items: prompts })
+    const result = await apiClient.post('/api/prompts/batch-upsert', { items: prompts })
+    if (!result.success) return false
     for (const p of prompts) {
       await db.notes.update(p.id, { syncStatus: 'synced' })
     }
   }
 
   if (folders.length) {
-    await apiClient.post('/api/folders/batch-upsert', { items: folders })
+    const result = await apiClient.post('/api/folders/batch-upsert', { items: folders })
+    if (!result.success) return false
     for (const f of folders) {
       await db.folders.update(f.id, { syncStatus: 'synced' })
     }
@@ -153,7 +155,6 @@ export async function forcePullRemote(): Promise<boolean> {
 }
 
 export async function syncAll(): Promise<boolean> {
-  await pushLocalChanges()
-  await pullRemote()
-  return true
+  if (!await pushLocalChanges()) return false
+  return pullRemote()
 }

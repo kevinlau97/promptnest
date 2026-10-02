@@ -1,0 +1,48 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "promptnest",
+  "main": "apps/server/src/index.ts",
+  "account_id": "ae483752ffee4c0079a2b55439dad5b8",
+  "compatibility_date": "2026-10-02",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./apps/web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "vars": {
+    "R2_PUBLIC_URL": "https://bild.quarker.cc"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "promptnest",
+      "database_id": "4fc24f7e-f905-4443-98c3-0536fa6a0f2e",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "memos"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 3 * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "memos.quarker.cc",
+      "custom_domain": true,
+      "zone_name": "quarker.cc"
+    }
+  ]
+}

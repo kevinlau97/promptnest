@@ -15,7 +15,7 @@
     "pinia": "^2.1.7",
     "dexie": "^4.0.4",
     "@vueuse/core": "^10.9.0",
-    "wasm-vips": "^0.0.11"
+    "marked": "^18.0.4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

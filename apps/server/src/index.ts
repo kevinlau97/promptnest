@@ -1,9 +1,6 @@
 import { Hono } from 'hono'
-import { serveStatic } from '@hono/node-server/serve-static'
-import { serve } from '@hono/node-server'
-import { logger } from 'hono/logger'
 import { cors } from 'hono/cors'
-import { resolve } from 'path'
+import type { AppEnv, Bindings } from './env.js'
 import auth from './routes/auth.js'
 import prompts from './routes/prompts.js'
 import folders from './routes/folders.js'
@@ -12,15 +9,18 @@ import share from './routes/share.js'
 import capture from './routes/capture.js'
 import health from './routes/health.js'
 import upload from './routes/upload.js'
+import proxy from './routes/proxy.js'
+import { cleanupSessions } from './auth/session.js'
+import { cleanupRateLimits } from './auth/rateLimit.js'
 
-type Variables = {
-  user: { email: string }
-}
+export const app = new Hono<AppEnv>()
 
-const app = new Hono<{ Variables: Variables }>()
-
-app.use(logger())
-app.use(cors({ origin: '*', credentials: true }))
+app.use('/api/*', cors())
+app.use('/api/*', async (c, next) => {
+  await next()
+  c.header('Cache-Control', 'no-store')
+  c.header('X-Content-Type-Options', 'nosniff')
+})
 
 app.route('/api/auth', auth)
 app.route('/api/prompts', prompts)
@@ -30,17 +30,17 @@ app.route('/api/share', share)
 app.route('/api/capture', capture)
 app.route('/api/health', health)
 app.route('/api/upload', upload)
-
-// Serve frontend build - use absolute path
-const webDistPath = resolve(import.meta.dirname, '../../web/dist')
-app.use('*', serveStatic({ root: webDistPath }))
-app.use('*', serveStatic({ path: resolve(webDistPath, 'index.html') }))
-
-const port = parseInt(process.env.PORT || '3000')
-
-serve({
-  fetch: app.fetch,
-  port,
-}, (info) => {
-  console.log(`Server running on http://localhost:${info.port}`)
+app.route('/api/proxy', proxy)
+app.notFound((c) => c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found' } }, 404))
+app.onError((err, c) => {
+  console.error('API request failed:', err.message)
+  return c.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Please try again later' } }, 500)
 })
+
+export default {
+  fetch: app.fetch,
+  async scheduled(_controller: ScheduledController, env: Bindings) {
+    await cleanupSessions(env.DB)
+    await cleanupRateLimits(env.DB)
+  },
+} satisfies ExportedHandler<Bindings>

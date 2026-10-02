@@ -1,35 +1,25 @@
-import { db } from '../db/index'
-import { randomUUID } from 'crypto'
-
 const SESSION_DAYS = 7
 
-export function createSession(email: string): string {
-  const id = randomUUID()
+export async function createSession(db: D1Database, email: string): Promise<string> {
+  const id = crypto.randomUUID()
   const now = new Date()
   const expiresAt = new Date(now.getTime() + SESSION_DAYS * 24 * 60 * 60 * 1000)
-  db.prepare('INSERT INTO sessions (id, email, createdAt, expiresAt) VALUES (?, ?, ?, ?)').run(
-    id,
-    email,
-    now.toISOString(),
-    expiresAt.toISOString()
-  )
+  await db.prepare('INSERT INTO sessions (id, email, createdAt, expiresAt) VALUES (?, ?, ?, ?)')
+    .bind(id, email, now.toISOString(), expiresAt.toISOString())
+    .run()
   return id
 }
 
-export function getSession(token: string): { email: string } | null {
-  const row = db.prepare('SELECT * FROM sessions WHERE id = ? AND expiresAt > ?').get(token, new Date().toISOString()) as
-    | { email: string }
-    | undefined
-  return row || null
+export async function getSession(db: D1Database, token: string): Promise<{ email: string } | null> {
+  return db.prepare('SELECT email FROM sessions WHERE id = ? AND expiresAt > ?')
+    .bind(token, new Date().toISOString())
+    .first<{ email: string }>()
 }
 
-export function deleteSession(token: string): void {
-  db.prepare('DELETE FROM sessions WHERE id = ?').run(token)
+export async function deleteSession(db: D1Database, token: string): Promise<void> {
+  await db.prepare('DELETE FROM sessions WHERE id = ?').bind(token).run()
 }
 
-export function cleanupSessions(): void {
-  db.prepare('DELETE FROM sessions WHERE expiresAt < ?').run(new Date().toISOString())
+export async function cleanupSessions(db: D1Database): Promise<void> {
+  await db.prepare('DELETE FROM sessions WHERE expiresAt <= ?').bind(new Date().toISOString()).run()
 }
-
-// Run cleanup every hour
-setInterval(cleanupSessions, 60 * 60 * 1000)

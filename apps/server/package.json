@@ -4,22 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc --outDir dist && node fix-imports.mjs && cp src/db/schema.sql dist/db/schema.sql",
-    "start": "node dist/index.js",
+    "dev": "wrangler dev --config ../../wrangler.jsonc --port 3000",
+    "build": "tsc --noEmit",
+    "start": "wrangler dev --config ../../wrangler.jsonc --port 3000",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.600.0",
-    "@hono/node-server": "^2.0.2",
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.6.0",
     "hono": "^4.3.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.10",
     "@types/node": "^20.12.12",
     "tsc-alias": "^1.8.17",
     "tsx": "^4.10.5",

@@ -15,3 +15,16 @@ stats.html
 .app/node-compile-cache/
 .omc/
 .stats/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+backups/
