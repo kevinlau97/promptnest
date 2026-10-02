@@ -89,6 +89,8 @@ npm run deploy
 
 See [部署说明（中文）](DEPLOYMENT.md) for database import, local testing, backups, and domain cutover.
 
+**Workers Builds：正在配置。** 连接 [kevinlau97/promptnest](https://github.com/kevinlau97/promptnest) 的 `main` 后，将自动运行 `ci:build` 并部署至 <https://memos.quarker.cc>。首次线上构建尚待验证；完整设置见 [自动构建与部署](DEPLOYMENT.md#推送-main-后自动构建与部署)。
+
 ## Configuration
 
 | Binding / Variable | Purpose | Configuration |

@@ -15,7 +15,8 @@
     "lint": "eslint . --ext .ts,.vue",
     "deploy": "npm run build && wrangler deploy",
     "typecheck": "npm -w apps/server run typecheck && npm -w apps/web run typecheck",
-    "check:worker": "wrangler deploy --dry-run --outdir dist/worker"
+    "check:worker": "wrangler deploy --dry-run --outdir dist/worker",
+    "ci:build": "node --import tsx --test apps/server/src/auth/*.test.mjs && npm run build"
   },
   "workspaces": [
     "apps/*"

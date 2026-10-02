@@ -60,6 +60,24 @@ npm run deploy
 
 自定义域名已切换至 Worker `promptnest`；`https://memos.quarker.cc/api/health` 返回 `hosting=cloudflare-workers`，旧服务器的 PM2 `promptnest` 进程已停止。当前账号使用 Workers Free。迁移校验确认原 SQLite 快照 SHA 一致，D1 共 217 条提示词记录，界面显示 215 条有效记录。
 
+## 推送 main 后自动构建与部署
+
+**状态：正在配置。** Workers Builds 连接及首次线上构建尚待验证。目标是向 [kevinlau97/promptnest](https://github.com/kevinlau97/promptnest) 的 `main` 分支推送后，自动更新 Worker `promptnest` 和 <https://memos.quarker.cc>。
+
+| Workers Builds 设置 | 值 |
+|---|---|
+| 仓库 | `kevinlau97/promptnest` |
+| 生产分支 | `main` |
+| 根目录 | `/` |
+| Build command | `npm ci --include=dev --include=optional && npm run ci:build` |
+| Deploy command | `npx wrangler deploy` |
+| 构建变量 `SKIP_DEPENDENCY_INSTALL` | `1` |
+| Node.js | `22.23.2`，由根目录 `.node-version` 指定 |
+
+`ci:build` 先运行认证测试，再执行包含类型检查的前后端构建。安装、测试或构建失败时不会执行部署；使用上述独立 deploy command，避免再次构建。
+
+管理员凭据保留在 Worker 的运行时 secrets，无需复制到构建变量。D1 结构迁移仍由人工执行：涉及新迁移时，先完成备份和检查，再运行 `npx wrangler d1 migrations apply promptnest --remote`，随后部署需要该结构的代码。
+
 ## 回滚到原服务器
 
 仅在决定恢复旧服务器时执行。若切换后 D1 已有新写入，先导出备份并处理新增数据，避免恢复旧快照后丢失这些修改。
