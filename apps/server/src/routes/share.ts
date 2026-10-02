@@ -1,33 +1,27 @@
 import { Hono } from 'hono'
-import { db } from '../db/index'
-import { success, error } from '../utils/response'
-import { requireAuth } from '../auth/middleware'
+import type { AppEnv } from '../env.js'
+import { success, error } from '../utils/response.js'
+import { requireAuth } from '../auth/middleware.js'
 
-type Variables = {
-  user: { email: string }
-}
-
-const app = new Hono<{ Variables: Variables }>()
+const app = new Hono<AppEnv>()
 
 app.post('/create', requireAuth, async (c) => {
   const body = await c.req.json()
   const { id, slug } = body
-  db.prepare('UPDATE prompts SET visibility = ?, shareSlug = ? WHERE id = ?').run('shared', slug, id)
+  await c.env.DB.prepare('UPDATE prompts SET visibility = ?, shareSlug = ? WHERE id = ?').bind('shared', slug, id).run()
   return success({ slug })
 })
 
 app.post('/cancel', requireAuth, async (c) => {
   const body = await c.req.json()
   const { id } = body
-  db.prepare('UPDATE prompts SET visibility = ?, shareSlug = ? WHERE id = ?').run('private', null, id)
+  await c.env.DB.prepare('UPDATE prompts SET visibility = ?, shareSlug = ? WHERE id = ?').bind('private', null, id).run()
   return success()
 })
 
-app.get('/:slug', (c) => {
+app.get('/:slug', async (c) => {
   const slug = c.req.param('slug')
-  const row = db.prepare('SELECT * FROM prompts WHERE shareSlug = ? AND visibility = ?').get(slug, 'shared') as
-    | Record<string, unknown>
-    | undefined
+  const row = await c.env.DB.prepare('SELECT * FROM prompts WHERE shareSlug = ? AND visibility = ?').bind(slug, 'shared').first<Record<string, unknown>>()
   if (!row) return error('NOT_FOUND', 'Shared prompt not found', 404)
 
   const prompt = {

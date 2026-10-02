@@ -2,15 +2,12 @@ import { Hono } from 'hono'
 import { uploadToR2 } from '../lib/r2.js'
 import { success, error } from '../utils/response.js'
 import { requireAuth } from '../auth/middleware.js'
+import type { AppEnv } from '../env.js'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
-type Variables = {
-  user: { email: string }
-}
-
-const app = new Hono<{ Variables: Variables }>()
+const app = new Hono<AppEnv>()
 
 app.post('/', requireAuth, async (c) => {
   const body = await c.req.parseBody()
@@ -29,17 +26,16 @@ app.post('/', requireAuth, async (c) => {
   }
 
   const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
 
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const timestamp = Date.now()
   const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-  const key = `promptnest/${year}/${month}/${timestamp}-${originalName}`
+  const key = `promptnest/${year}/${month}/${timestamp}-${crypto.randomUUID()}-${originalName}`
 
   try {
-    const url = await uploadToR2(key, buffer, file.type)
+    const url = await uploadToR2(c.env, key, arrayBuffer, file.type)
     return success({ url })
   } catch (e) {
     console.error('R2 upload failed:', e)

@@ -1,12 +1,9 @@
 import { Hono } from 'hono'
-import { success } from '../utils/response'
-import { requireAuth } from '../auth/middleware'
+import type { AppEnv } from '../env.js'
+import { success } from '../utils/response.js'
+import { requireAuth } from '../auth/middleware.js'
 
-type Variables = {
-  user: { email: string }
-}
-
-const app = new Hono<{ Variables: Variables }>()
+const app = new Hono<AppEnv>()
 
 app.post('/', requireAuth, async (c) => {
   const body = await c.req.json()

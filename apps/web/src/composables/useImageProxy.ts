@@ -7,7 +7,7 @@ export function useImageProxy() {
     try {
       const parsed = new URL(url)
       // 检查是否需要代理
-      if (proxyDomains.some(d => parsed.hostname === d || parsed.hostname.endsWith(d))) {
+      if (parsed.protocol === 'https:' && proxyDomains.includes(parsed.hostname)) {
         return `/api/proxy/image?url=${encodeURIComponent(url)}`
       }
       return url
